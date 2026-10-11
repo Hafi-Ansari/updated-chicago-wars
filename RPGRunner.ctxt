@@ -1,7 +1,0 @@
-#BlueJ class context
-comment0.target=RPGRunner
-comment0.text=\r\n\ Backbone\ of\ game,\ where\ Hero\ object\ instantiated\ and\ runner/main\ method\ called\r\n
-comment1.params=args
-comment1.target=void\ main(java.lang.String[])
-comment1.text=\r\n\ Main\ method\ &\ runner\ of\ entire\ program.\ Hero\ Object\ and\ HiddenSkill\ objects\ instantiated\ here.\ \r\n\ RandomEncounter\ called\ here\r\n
-numComments=2

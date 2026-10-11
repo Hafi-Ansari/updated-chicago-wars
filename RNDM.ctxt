@@ -1,5 +1,0 @@
-#BlueJ class context
-comment0.params=low\ high
-comment0.target=int\ i(int,\ int)
-comment0.text=\r\n\ Finds\ and\ returns\ a\ random\ int\ value\ between\ the\ parameters\ \r\n\ @param\ low\ the\ lower\ bound\ of\ random\ int\ values\r\n\ @param\ high\ the\ upper\ bound\ of\ random\ int\ values\r\n\ @return\ the\ random\ int\ value\r\n
-numComments=1

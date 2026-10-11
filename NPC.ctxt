@@ -1,7 +1,0 @@
-#BlueJ class context
-comment0.target=NPC
-comment0.text=\r\n\ Inherits\ properties\ of\ Character\r\n
-comment1.params=n\ h
-comment1.target=NPC(java.lang.String,\ int)
-comment1.text=\r\n\ Constructer\ for\ NPC\ character\ (cannot\ instantiate)\r\n\ @param\ n\ Name\ of\ the\ character\r\n\ @param\ h\ health\ of\ the\ character\r\n
-numComments=2

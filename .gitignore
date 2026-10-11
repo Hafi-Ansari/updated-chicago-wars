@@ -1,0 +1,13 @@
+# Compiled bytecode
+*.class
+
+# BlueJ project metadata (regenerated when the project is opened)
+*.ctxt
+package.bluej
+bluej.pkg
+bluej.pkh
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*~

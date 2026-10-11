@@ -1,7 +1,0 @@
-#BlueJ class context
-comment0.target=ScrollText
-comment0.text=\r\n\ \ Prints\ text\ in\ a\ scrolling\ format\ that\ slowly\ prints\ letters\ over\ time\r\n
-comment1.params=t\ s
-comment1.target=void\ scrollText(long,\ java.lang.String)
-comment1.text=\r\n\ Prints\ text\ in\ a\ scrolling\ format\ that\ slowly\ prints\ letters\ over\ time\r\n\ @\ param\ t\ the\ speed\ in\ milliseconds\ the\ text\ is\ printed\ in\r\n\ @\ param\ s\ the\ text\ that's\ printed\ out\r\n
-numComments=2
