@@ -1,0 +1,351 @@
+/**
+ * Every enemy raps (except Goons, who try their best and fail). Move texts are
+ * narration; intro/taunt/blockFlee/defeat are spoken bars.
+ */
+
+import type { EnemyKind } from '../engine/types'
+import type { EnemyDef } from './types'
+
+const goon: EnemyDef = {
+  kind: 'goon',
+  title: 'Goon',
+  rhymes: false,
+  intro: [
+    'Maybe if I beat you, I can learn how to rap like everyone else in this city!',
+    "I been doing pushups for like... three days. You're done!",
+    "Roses are red, violets are... purple? You're dead. Wait. Hold on. That kinda worked?",
+    "I'm gonna spit some bars! ...Okay, I don't know any bars. I'm gonna spit, though.",
+    "My mom says I'm the toughest guy on our block. Our block is a cul-de-sac in Naperville.",
+    'Gimme your clout! Or... some of it. Like half. Can we negotiate?',
+    "I watched a whole YouTube video about fighting. At 2x speed. I'm basically a black belt.",
+    'Everybody in this city raps but me. Do you know how lonely that is?! FIGHT ME!',
+    "Okay, okay. Rhyme time. Uhh... cat. Hat. FIGHT! ...That's not a rhyme. Whatever!",
+    "I'm the scariest guy in this alley. Please don't check if there's anyone else in this alley.",
+    'I have a rap name. It\'s "Lil Goon." I came up with it myself. It took a week.',
+    "You look like you've got clout. I've got zero clout. Let's fix that imbalance!",
+  ],
+  taunt: [
+    'Ha! I meant to do that!',
+    'Did that hurt? It hurt me a little.',
+    "I'm basically a ninja. A loud ninja.",
+    'Wait, which hand do I punch with again?',
+    "Orange... door hinge... porridge... I'll find one eventually!",
+    'This is going GREAT for me. Probably.',
+    "Mom, if you're watching, I'm doing a fight!",
+  ],
+  blockFlee: [
+    "I see you tryna run run, haha no I ain't had my fun fun! ...Wait, did I just rhyme?!",
+    "Nuh-uh! You can't leave! I just got here! ...I mean, I've been here. You know what I mean!",
+    "Hey! Get back here! I haven't even done my cool line yet!",
+    "Where are you going?! This is the most attention anyone's given me all week!",
+  ],
+  defeat: [
+    "Fo' sure, fo' sure, I'm done, yo...",
+    "I'm telling my mom.",
+    "Okay, new plan: I'm gonna become a poet first, then come back.",
+    "That's fair. That's... honestly really fair.",
+    'I think I saw my whole life flash by. It was mostly YouTube.',
+    'Can you at least tell people I almost had you?',
+    'I should have stayed in Naperville.',
+  ],
+  basicAttackWeight: 3,
+  moves: [
+    {
+      weight: 1,
+      text: '{enemy} flails both arms wildly!',
+      effects: [{ type: 'damage', power: 0.6, hits: 2 }],
+    },
+    {
+      weight: 0.5,
+      text: '{enemy} tries a spinning kick and falls right over.',
+      effects: [{ type: 'status', target: 'self', status: 'dazed', turns: 1 }],
+    },
+  ],
+}
+
+const thug: EnemyDef = {
+  kind: 'thug',
+  title: 'Thug',
+  rhymes: true,
+  intro: [
+    "Heheh, I'm getting the hang of this trip,\nI'mma take your clout and then steal yo' whip!",
+    "Run yo' pockets, run 'em quick,\nor catch these hands and a cheap shot kick.",
+    'I been posted on this corner since half past nine,\nand every block from here to Western is mine.',
+    "You walking real loud for somebody so small,\nI'm about to bounce you off this brick like a ball.",
+    'New shoes, new chain, new reason to swing,\nyou picked the wrong night to be doing your thing.',
+    "They call me a thug 'cause I ain't got manners,\nI'm about to fold you up like one of them banners.",
+    'Ayo, look who wandered into my zone,\nleave your wallet, your clout, and your phone.',
+    "Hood certified, street verified,\nby the end of this you'll be horrified.",
+    "Saw you flexing on the Blue Line, thought you was cute,\nnow I'm about to take your clout and your boots.",
+    "This my corner, this my spot,\nand you're standing on it, so you're getting got.",
+  ],
+  taunt: [
+    "Stick and move, poke and slide,\nain't no place on this block you can hide.",
+    "That was a tickle, here comes the pain,\nI'm faster than the Brown Line in the rain.",
+    "Feel that? That's the street saying hi,\nand we ain't even started, don't ask me why.",
+    "Swish, swish, watch the blade go by,\nyou'll be patching that up 'til the Fourth of July.",
+    "Keep your guard up... oh wait, you can't,\nyou're shaking more than my grandma's plant.",
+    "Pocket sand! Old school, but it works,\nnow you're blind, and I'm going berserk.",
+  ],
+  blockFlee: [
+    "Nah nah nah, sit back down,\nyou ain't leaving 'til I say you're leaving town.",
+    "Running? From me? In those shoes?\nYou ain't got the legs and you ain't got the moves.",
+    "Block's on lock, every exit's shut,\nturn around, homie, and take one to the gut.",
+  ],
+  defeat: [
+    "Aight, aight... you got that one,\ndon't tell nobody, I'm about to run.",
+    "Took my pride and my rep in a minute flat,\nI'm moving to Indiana, and that's that.",
+    "I'm down, I'm out, I'm seeing stars,\ntell the block I went out spitting bars.",
+    "You won this one, but the war ain't done...\nactually, nah, it's done. You won.",
+    "I slipped! It was the ice! It's October, I know!\nBut the Hawk was blowing, so I had to go.",
+  ],
+  basicAttackWeight: 3,
+  moves: [
+    {
+      weight: 1,
+      text: '{enemy} pulls out a shank!',
+      effects: [
+        { type: 'damage', power: 0.8 },
+        { type: 'status', target: 'foe', status: 'bleeding', turns: 2, chance: 0.7 },
+      ],
+    },
+    {
+      weight: 0.7,
+      text: '{enemy} throws a handful of pocket sand!',
+      effects: [
+        { type: 'damage', power: 0.3 },
+        { type: 'status', target: 'foe', status: 'dazed', turns: 2, chance: 0.6 },
+      ],
+    },
+  ],
+}
+
+const biker: EnemyDef = {
+  kind: 'biker',
+  title: 'Biker',
+  rhymes: true,
+  intro: [
+    "Proficient I be in the school of rap,\nI'mma beat you while I play some trap!",
+    "Rolled up on a hog with the pipes too loud,\nI'm about to leave you choking in the exhaust cloud.",
+    'Leather on my back and grease on my hands,\nI run these roads from here to the Indiana sands.',
+    "Two wheels, one rule: never back down,\nI'm the loudest thing rolling through this town.",
+    "Sixty miles an hour down Lake Shore Drive,\nyou're lucky I stopped, you're lucky you're alive.",
+    "My bike's named Delilah and she don't like you,\nshe told me to handle it, so that's what I'ma do.",
+    "Helmet? Nah. Rules? Nah. Fear? Never had none,\nnow line up, it's time for my favorite kind of fun.",
+    "I came up rough in the Rust Belt, son,\nyou're about to find out where the thunder comes from.",
+  ],
+  taunt: [
+    "VRRRM VRRRM, hear the engine sing,\nthat's the sound of me about to do my thing.",
+    "Smell that? That's gasoline and fear,\nmostly yours, homie, it's thick in here.",
+    "I'm a road hog, a freeway king,\nyou're a speed bump, you ain't a thing.",
+    "Kickstand down and the gloves come off,\nyou're about to cough like a busted exhaust.",
+    "Highway to the danger zone, that's my song,\nand you've been in my lane way too long.",
+  ],
+  blockFlee: [
+    "You can't outrun a Harley, homie, it's science,\nI got horsepower and zero compliance.",
+    "Running on foot from a guy with a bike?\nThat's the dumbest plan I've seen, but alright.",
+    "I'll chase you down Ashland, I'll chase you down Clark,\nI've got headlights, homie, I can ride in the dark.",
+  ],
+  defeat: [
+    "Tell Delilah I loved her, tell her I tried,\nI'm walking home with nothing but my pride.",
+    "Flat tire, busted chain, end of the ride,\nI'mma limp back to the garage and hide.",
+    "Two wheels down and my engine's cold,\nyou're the real deal, just like I was told.",
+    "I'm hanging up the leather, I'm selling the bike,\nI'm taking up knitting, it's what I really like.",
+  ],
+  basicAttackWeight: 3,
+  moves: [
+    {
+      weight: 1,
+      text: '{enemy} revs the engine menacingly. VRRRM VRRRM!',
+      effects: [{ type: 'status', target: 'self', status: 'pumped', turns: 2 }],
+    },
+    { weight: 1, text: '{enemy} clotheslines you!', effects: [{ type: 'damage', power: 1.3 }] },
+    {
+      weight: 0.7,
+      text: '{enemy} blasts you with a cloud of exhaust!',
+      effects: [{ type: 'status', target: 'foe', status: 'dazed', turns: 2, chance: 0.6 }],
+    },
+  ],
+}
+
+const gangLeader: EnemyDef = {
+  kind: 'gangLeader',
+  title: 'Gang Leader',
+  rhymes: true,
+  intro: [
+    "Ayo yo yo, I'mma pop one in yo' tummy,\ncan't say no, 'cause your fighting is crummy!",
+    'I run the whole crew from Cicero to the lake,\nevery corner I own, every dollar I make.',
+    'You been knocking out my soldiers, causing a scene,\nnow you face the boss, the head of the machine.',
+    "I don't get my hands dirty, I don't need to,\nbut for you I'll make an exception. I'll beat you.",
+    'Suit pressed, hat tilted, ring on my hand,\nwhen I snap my fingers, the whole block stands.',
+    "My boys say you're tough, my boys say you're slick,\nmy boys say a lot of stuff. Let's see real quick.",
+    "Respect is earned, and you ain't paid,\nso let me show you how a leader's made.",
+    "Fifteen years running this territory,\nyou're just a footnote in my life story.",
+  ],
+  taunt: [
+    "Fellas! Get 'em! ...What do you mean you're on break?\nFine, I'll do it myself, for goodness' sake.",
+    "This is business, nothing personal, kid,\nI'm just cleaning up the mess that you did.",
+    "Look in my eyes and tell me you ain't shook,\nI read you easy like a kids' picture book.",
+    "I built this empire from the ground floor,\nand you ain't the first to come knocking at my door.",
+    "Bodyguard! Step up, take the hit,\nthat's what I pay you for, so don't quit.",
+  ],
+  blockFlee: [
+    "My boys got the block wrapped, front to back,\nsit back down, homie, you ain't leaving, Jack.",
+    'Leaving? Now? Before we settle up?\nNah, you finish what you started, so buckle up.',
+  ],
+  defeat: [
+    'You just ended my whole operation,\nI respect it. Consider this my resignation.',
+    "Fifteen years, gone in one night,\nI guess I'll retire to the suburbs. Alright.",
+    "Tell my boys they're fired, every last one,\nwhere were they? At lunch? While I'm getting done?",
+    "The crown's too heavy, the crew's too weak,\nI'm out the game, I need a long week.",
+  ],
+  basicAttackWeight: 3,
+  moves: [
+    {
+      weight: 1,
+      text: '{enemy} whistles. The whole crew jumps out of nowhere and piles on!',
+      effects: [{ type: 'damage', power: 0.45, hits: 3 }],
+    },
+    {
+      weight: 1,
+      text: '{enemy} gives you a stare so cold your knees start shaking.',
+      effects: [{ type: 'status', target: 'foe', status: 'shook', turns: 2 }],
+    },
+    {
+      weight: 0.6,
+      text: 'A bodyguard steps in front of {enemy}.',
+      effects: [{ type: 'status', target: 'self', status: 'guarded', turns: 1 }],
+    },
+  ],
+}
+
+const gangRapper: EnemyDef = {
+  kind: 'gangRapper',
+  title: 'Gang Rapper',
+  rhymes: true,
+  intro: [
+    "We out here ballin', we don't do much talkin',\nleave you in the street and have your whole crew walkin'.",
+    "Platinum plaques on the wall back home,\nI'm about to drop your name in my diss track poem.",
+    "Mic check, one two, can you hear me now?\nI'm about to show you how the pros do it. Wow.",
+    "My flow's colder than a January night,\nmy hook's so catchy you'll be humming through the fight.",
+    "They play me on the radio from here to the Q,\nand my next hit single? It's all about you.",
+    "I spit fire, you spit lukewarm water,\nyou're about to get roasted like a deep dish order.",
+    "Autotune off, this is all natural,\nI'm about to make your defeat factual.",
+    "My streaming numbers say I'm number one,\nand by the end of this, you'll be number none.",
+  ],
+  taunt: [
+    "Here's a verse about your mama: she's lovely, though,\nshe makes good lasagna, I just thought you should know.",
+    "Drop the beat! Boom bap, boom bap!\nThat's the sound of your face when I give it a slap.",
+    "Bars on bars on bars on bars,\nI'm about to send you up to see the stars.",
+    "Hold up, hold up, let me freestyle that,\nyou're soft like a beanie and flat like a mat.",
+    "Ad-lib! Skrrt! Yeah! Uh-huh!\nYou can't keep up, so just give it up.",
+    "Hype man! Hype man! Where you at?\nGet this crowd going, and that's a fact!",
+  ],
+  blockFlee: [
+    "Where you going? I ain't dropped the hook yet!\nSit down, this is the best verse you'll ever get.",
+    "Leaving mid-verse? That's disrespect,\nstay for the bridge, it's got the best effect.",
+  ],
+  defeat: [
+    'This is going on my next album, for real,\na sad little song about how losing feels.',
+    "Cancel my tour, refund my fans,\nI just got bodied by an amateur's hands.",
+    "The beat just stopped, the crowd went home,\nI'm writing my comeback song alone.",
+    "You win this battle, but my label's mad,\nworst review my new single ever had.",
+  ],
+  basicAttackWeight: 2,
+  moves: [
+    {
+      weight: 1,
+      text: '{enemy} drops a diss track about your mama. It goes kinda hard.',
+      effects: [
+        { type: 'damage', power: 0.6 },
+        { type: 'status', target: 'foe', status: 'shook', turns: 2 },
+      ],
+    },
+    {
+      weight: 1,
+      text: '{enemy} freestyles a flurry of bars AND fists!',
+      effects: [{ type: 'damage', power: 0.5, hits: 3 }],
+    },
+    {
+      weight: 0.7,
+      text: "{enemy}'s hype man starts screaming ad-libs. The energy is unreal.",
+      effects: [{ type: 'status', target: 'self', status: 'hyped', turns: 3 }],
+    },
+  ],
+}
+
+const boss: EnemyDef = {
+  kind: 'boss',
+  title: 'King of Chicago',
+  rhymes: true,
+  intro: [
+    "So you're the one making noise on my streets?\nI'm about to turn you to a B-side with no beats.",
+    "Twelve blocks you walked just to meet the King?\nShould've stayed home, 'cause you won't feel a thing.",
+    'Ice on my neck and a crown on my head,\nthe whole city bows to every word I said.',
+    "Midnight's the hour when the King comes out,\nand by the end of this, nobody will doubt.",
+  ],
+  taunt: [
+    "Kneel down, peasant, show some respect,\nthis crown's been heavy since my very first check.",
+    "You hear that crowd? They're chanting my name,\nyou're just a guest star in the Midnight game.",
+    "Gold on my wrist and gold on my teeth,\nI'm the King up top, you're the dirt underneath.",
+    "I been the King since before you could crawl,\nI'm Chicago itself, I'm the wind and the wall.",
+    'Every punch you throw, I already knew,\nI wrote this ending way before you.',
+    "Midnight hour, feel the city's power,\nI'm getting stronger by the minute, by the hour.",
+  ],
+  blockFlee: [
+    "Nobody leaves The Bean 'til the King says so,\nsit down, the show's only halfway through, yo.",
+  ],
+  defeat: [
+    "Nah... NAH! The crown... it's slipping away...\nthe city is yours, {hero}... for today.",
+    "Midnight's over, here comes the sun...\nyou took my throne. You really won.",
+  ],
+  basicAttackWeight: 2,
+  moves: [
+    {
+      weight: 1,
+      text: '{enemy} spits a platinum-certified diss. The crowd goes "OOOOH."',
+      effects: [
+        { type: 'damage', power: 0.7 },
+        { type: 'status', target: 'foe', status: 'shook', turns: 2 },
+      ],
+    },
+    {
+      weight: 1,
+      text: '{enemy} whips a platinum chain around like a flail!',
+      effects: [
+        { type: 'damage', power: 1.1 },
+        { type: 'status', target: 'foe', status: 'bleeding', turns: 2, chance: 0.6 },
+      ],
+    },
+    {
+      weight: 0.7,
+      text: '{enemy}\'s hype man screams "AYYYY!" Now {enemy} is pumped.',
+      effects: [{ type: 'status', target: 'self', status: 'pumped', turns: 2 }],
+    },
+    {
+      weight: 0.6,
+      text: '{enemy} raises a hand and the wind off the lake answers.',
+      effects: [
+        { type: 'damage', power: 0.4 },
+        { type: 'status', target: 'foe', status: 'frostbit', turns: 3 },
+      ],
+    },
+    {
+      weight: 1,
+      whenHurt: true,
+      text: 'The clock strikes midnight. {enemy} starts vibing to a beat only they can hear.',
+      effects: [{ type: 'status', target: 'self', status: 'vibing', turns: 3 }],
+    },
+  ],
+}
+
+export const ENEMIES: Record<EnemyKind, EnemyDef> = {
+  goon,
+  thug,
+  biker,
+  gangLeader,
+  gangRapper,
+  boss,
+}
+
+export const BOSS_NAME = 'Lil Midnight'
