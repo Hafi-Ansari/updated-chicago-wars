@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { ENEMIES } from '../src/content/enemies'
 import { MOVES } from '../src/content/moves'
 import { OPENING_SCENARIOS, OPENINGS } from '../src/content/openings'
 import { SKILLS } from '../src/content/skills'
@@ -95,6 +96,34 @@ describe('effects', () => {
     applyEffects(normal, 'hero', [{ type: 'damage', power: 1 }])
     applyEffects(pierce, 'hero', [{ type: 'damage', power: 1, pierce: true }])
     expect(pierce.enemy.hp).toBeLessThan(normal.enemy.hp)
+  })
+
+  it("a dodged attack doesn't land its status rider (a missed shank doesn't bleed)", () => {
+    const shank = ENEMIES.thug.moves[0]
+    expect(shank?.effects).toContainEqual(expect.objectContaining({ status: 'bleeding' }))
+    const effects = [
+      { type: 'damage', power: 1 },
+      { type: 'status', target: 'foe', status: 'bleeding', turns: 2 },
+      { type: 'status', target: 'self', status: 'pumped', turns: 2 },
+    ] as const
+    let dodges = 0
+    for (let seed = 1; seed <= 200; seed++) {
+      // A fast hero dodges the enemy's swing as often as the cap allows.
+      const ctx = makeCombat(makeHero({ spd: 999 }), makeEnemy({ maxHp: 999 }), seed)
+      applyEffects(ctx, 'enemy', effects)
+      const dodged = ctx.events.some((e) => e.type === 'miss')
+      if (dodged) dodges += 1
+      expect(ctx.hero.statuses.some((s) => s.kind === 'bleeding')).toBe(!dodged)
+      // Effects on the attacker itself still happen either way.
+      expect(ctx.enemy.statuses.some((s) => s.kind === 'pumped')).toBe(true)
+    }
+    expect(dodges).toBeGreaterThan(10)
+  })
+
+  it('status-only moves still apply without an attack roll', () => {
+    const ctx = makeCombat()
+    applyEffects(ctx, 'hero', MOVES.talkTrash.effects)
+    expect(ctx.enemy.statuses.map((s) => s.kind)).toEqual(['shook'])
   })
 
   it('finishers hit harder on a weakened foe', () => {

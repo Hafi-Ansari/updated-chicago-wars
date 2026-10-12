@@ -17,13 +17,29 @@ import { applyStatus } from './status'
 /** Applies effects in order. Returns the total damage dealt to the foe (for recoil). */
 export function applyEffects(ctx: CombatContext, user: Side, effects: readonly Effect[]): number {
   let dealt = 0
+  let whiffed = false
   for (const effect of effects) {
     // Self-targeted effects still happen after a knockout (recoil, heals); attacks don't.
     if (isDown(fighter(ctx, other(user))) && targetsFoe(effect)) continue
     if (isDown(fighter(ctx, user))) break
+    // A rider (the bleed on a shank, the daze on pocket sand) only sticks if the attack
+    // before it connected. Without this, a dodged swing could still leave you bleeding.
+    if (whiffed && isRider(effect)) continue
+    const before = dealt
     dealt += applyEffect(ctx, user, effect, dealt)
+    if (isAttack(effect)) whiffed = dealt === before
   }
   return dealt
+}
+
+/** Effects that roll to hit the foe; a full miss or dodge deals 0. */
+function isAttack(effect: Effect): boolean {
+  return effect.type === 'damage' || effect.type === 'execute'
+}
+
+/** Effects on the foe that ride along with an attack rather than hitting on their own. */
+function isRider(effect: Effect): boolean {
+  return effect.type === 'status' && effect.target === 'foe'
 }
 
 function targetsFoe(effect: Effect): boolean {
