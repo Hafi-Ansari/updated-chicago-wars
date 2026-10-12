@@ -39,8 +39,9 @@ src/ui/        React: plays events back (typewriter, animations), dispatches act
 - **Combat math** goes through one function, `rollAttack` (`src/engine/combat/damage.ts`):
   ATK × power ± 15%, mitigated by `K / (K + DEF)`, crits ×1.5, minimum 1 damage. HP only changes
   through `applyDamage` and `applyHeal`, which clamp it.
-- **Moves**: the hero carries up to 4 moves with PP (`src/content/moves.ts`), learns new
-  ones on level-up (every 2 wins) or from the Gangsta for clout, and forgets one when full.
+- **Moves**: the hero carries up to 6 moves with PP (`src/content/moves.ts`). After every win
+  they're offered new ones (higher tiers unlock as they level up, every 2 wins), the Gangsta
+  teaches them for clout, and the hero forgets one when full.
   Moves can have accuracy, priority, recoil, armor-piercing and finisher bonuses, and they
   apply statuses (stunned, bleeding, pumped, shook, hyped, guarded, dazed, frostbit, vibing).
 - **Vendors** (Plug, Gangsta, hot dog cart) aren't random encounters. They're recurring
