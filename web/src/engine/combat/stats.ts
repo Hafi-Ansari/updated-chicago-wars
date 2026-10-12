@@ -1,4 +1,11 @@
-import { FROSTBIT_SPD_MULT, HYPED_CRIT_BONUS, PUMPED_ATK_MULT, SHOOK_DEF_MULT } from '../balance'
+import {
+  FROSTBIT_SPD_MULT,
+  HOBBLED_SPD_MULT,
+  HYPED_CRIT_BONUS,
+  PUMPED_ATK_MULT,
+  SHOOK_DEF_MULT,
+  WEAKENED_ATK_MULT,
+} from '../balance'
 import type { Combatant, Stats, StatusKind } from '../types'
 
 export function hasStatus(c: Combatant, kind: StatusKind): boolean {
@@ -10,9 +17,17 @@ export function effectiveStats(c: Combatant): Stats {
   const { stats } = c
   return {
     ...stats,
-    atk: hasStatus(c, 'pumped') ? Math.round(stats.atk * PUMPED_ATK_MULT) : stats.atk,
+    atk: Math.round(
+      stats.atk *
+        (hasStatus(c, 'pumped') ? PUMPED_ATK_MULT : 1) *
+        (hasStatus(c, 'weakened') ? WEAKENED_ATK_MULT : 1),
+    ),
     def: hasStatus(c, 'shook') ? Math.round(stats.def * SHOOK_DEF_MULT) : stats.def,
-    spd: hasStatus(c, 'frostbit') ? Math.round(stats.spd * FROSTBIT_SPD_MULT) : stats.spd,
+    spd: Math.round(
+      stats.spd *
+        (hasStatus(c, 'frostbit') ? FROSTBIT_SPD_MULT : 1) *
+        (hasStatus(c, 'hobbled') ? HOBBLED_SPD_MULT : 1),
+    ),
     crit: hasStatus(c, 'hyped') ? Math.min(1, stats.crit + HYPED_CRIT_BONUS) : stats.crit,
   }
 }

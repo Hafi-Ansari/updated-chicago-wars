@@ -16,16 +16,7 @@ import {
   TRADE,
 } from './balance'
 import type { Rng } from './rng'
-import type {
-  BoostableStat,
-  Enemy,
-  EnemyKind,
-  GameState,
-  Hero,
-  MoveId,
-  NpcId,
-  NpcInstance,
-} from './types'
+import type { Enemy, EnemyKind, GameState, Hero, MoveId, NpcId, NpcInstance } from './types'
 
 export type Encounter = EncounterKind | 'boss'
 
@@ -105,7 +96,7 @@ export function createNpc(state: GameState, rng: Rng, id: NpcId): NpcInstance {
         price: LESSON.basePrice + state.movesTaught * LESSON.priceStep,
       }
     }
-    const stat = rng.pick<BoostableStat>(['maxHp', 'atk', 'def', 'spd'])
+    const stat = rng.pick<keyof typeof TRADE.gains>(['maxHp', 'atk', 'def', 'spd'])
     const [min, max] = TRADE.gains[stat]
     npc.offer = {
       stat,

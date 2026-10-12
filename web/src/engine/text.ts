@@ -12,4 +12,5 @@ export const STAT_LABELS = {
   atk: 'Attack',
   def: 'Defense',
   spd: 'Speed',
+  crit: 'Crit chance',
 } as const

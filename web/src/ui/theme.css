@@ -62,6 +62,14 @@ input {
   color: inherit;
 }
 
+button,
+a,
+label {
+  -webkit-tap-highlight-color: transparent;
+  /* No double-tap-to-zoom delay on buttons. */
+  touch-action: manipulation;
+}
+
 :focus-visible {
   outline: 2px solid var(--accent-2);
   outline-offset: 2px;
@@ -109,9 +117,12 @@ input {
     background 120ms ease;
 }
 
-.btn:hover:not(:disabled) {
-  background: var(--surface-hi);
-  border-color: var(--accent);
+/* Hover styles only where there is a real pointer; on touch they stick after a tap. */
+@media (hover: hover) {
+  .btn:hover:not(:disabled) {
+    background: var(--surface-hi);
+    border-color: var(--accent);
+  }
 }
 
 .btn:active:not(:disabled) {

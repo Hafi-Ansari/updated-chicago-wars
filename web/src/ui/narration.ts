@@ -56,6 +56,14 @@ const STATUS_TEXT: Record<StatusKind, Record<'applied' | 'expired', [string, str
     applied: ['You are vibing! (Regenerating)', 'X is vibing! (Regenerating)'],
     expired: ['You stopped vibing.', 'X stopped vibing.'],
   },
+  weakened: {
+    applied: ['You are weakened! (Attack down)', 'X is weakened! (Attack down)'],
+    expired: ['Your strength came back.', "X's strength came back."],
+  },
+  hobbled: {
+    applied: ['You are hobbled! (Speed down)', 'X is hobbled! (Speed down)'],
+    expired: ['You walked it off.', 'X walked it off.'],
+  },
 }
 
 const who = (side: Side, names: Names, capital = true) =>
@@ -151,7 +159,10 @@ export function describe(event: GameEvent, names: Names): Line | null {
         tone: event.amount >= 0 ? 'reward' : 'normal',
       }
     case 'statUp':
-      return { text: `${STAT_LABELS[event.stat]} +${event.amount}!`, tone: 'reward' }
+      return {
+        text: `${STAT_LABELS[event.stat]} +${event.stat === 'crit' ? `${Math.round(event.amount * 100)}%` : event.amount}!`,
+        tone: 'reward',
+      }
     case 'skillLearned': {
       const skill = SKILLS[event.skill]
       return { text: `You got the ${skill.item}! (${skill.name})`, tone: 'reward' }

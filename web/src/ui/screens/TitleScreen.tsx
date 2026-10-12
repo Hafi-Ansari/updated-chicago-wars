@@ -1,5 +1,4 @@
 import { type FormEvent, useState } from 'react'
-import { ART_CREDITS } from '../../content/sprites'
 import { Modal } from '../components/Modal'
 import { SettingsMenu } from '../components/SettingsMenu'
 import Skyline from '../stage/Skyline'
@@ -84,27 +83,27 @@ export function TitleScreen({ onStart, onResume, settings, onSettings }: TitleSc
       {panel === 'credits' && (
         <Modal title="Credits" onClose={() => setPanel(null)}>
           <p>
-            <strong>Chicago Wars</strong> by Hafi Ansari. Originally a Java console game for AP
-            Computer Science (2020), rebuilt for the web.
+            <strong>Chicago Wars</strong> by Hafi Ansari, rebuilt from a 2020 AP Computer Science
+            project.
           </p>
           <p>
-            Fonts: Silkscreen by Jason Kottke and Pixelify Sans by Stefie Justprince (SIL Open Font
-            License). Color palette: Dracula.
+            Character sprites from the{' '}
+            <a
+              href="https://github.com/LiberatedPixelCup/Universal-LPC-Spritesheet-Character-Generator"
+              target="_blank"
+              rel="noopener"
+            >
+              Universal LPC Spritesheet Character Generator
+            </a>{' '}
+            (
+            <a href={`${import.meta.env.BASE_URL}CREDITS.md`} target="_blank" rel="noopener">
+              full attribution
+            </a>
+            ).
           </p>
-          <h3 className="pixel modal__subhead">Character art</h3>
-          <p>
-            Sprites composited from the Universal LPC Spritesheet Character Generator. Each layer is
-            used under one of the licenses listed for it.
+          <p className="muted-text">
+            Music and sound made for this game. Fonts: Silkscreen and Pixelify Sans.
           </p>
-          <ul className="credits-list">
-            {ART_CREDITS.map((c) => (
-              <li key={c.file}>
-                <span className="pixel">{c.file}</span>
-                <span>{c.authors.join(', ')}</span>
-                <span className="muted-text">{c.licenses.join(' / ')}</span>
-              </li>
-            ))}
-          </ul>
         </Modal>
       )}
     </main>

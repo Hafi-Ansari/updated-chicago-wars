@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { MOVES } from '../src/content/moves'
+import { OPENING_SCENARIOS, OPENINGS } from '../src/content/openings'
 import { SKILLS } from '../src/content/skills'
 import { applyEffects } from '../src/engine/combat/effects'
 import { applyStatus, beginTurn, endTurn } from '../src/engine/combat/status'
@@ -10,6 +11,7 @@ import {
   fleeRound,
   strikeOpening,
 } from '../src/engine/combat/turn'
+import { fill } from '../src/engine/text'
 import { makeCombat, makeEnemy, makeHero, withMoves } from './helpers'
 
 const jab = { type: 'move', move: 'jab' } as const
@@ -167,6 +169,36 @@ describe('fightRound', () => {
     const hero = makeHero({}, { skills: ['airpods'] })
     expect(canUseSkill(hero, 'airpods')).toBe(false)
     expect(canUseSkill(hero, 'glock')).toBe(false)
+  })
+})
+
+describe('openings', () => {
+  it("plays a scenario intro and offers only that scenario's body parts", () => {
+    let seen = 0
+    for (let seed = 1; seed <= 80; seed++) {
+      const ctx = makeCombat(makeHero(), makeEnemy({ maxHp: 9999, atk: 1 }), seed)
+      fightRound(ctx, jab)
+      const offered = ctx.battle.opening
+      if (!offered) continue
+      seen++
+      const narrated = ctx.events.flatMap((e) => (e.type === 'narrate' ? [e.text] : []))
+      const scenario = OPENING_SCENARIOS.find((s) =>
+        narrated.includes(fill(s.intro[0] ?? '', { enemy: ctx.enemy.name })),
+      )
+      expect(scenario).toBeDefined()
+      for (const target of offered) expect(scenario?.targets).toContain(target)
+    }
+    expect(seen).toBeGreaterThan(10)
+  })
+
+  it('knees hobble and arms weaken', () => {
+    const knees = makeCombat(makeHero({ spd: 999 }), makeEnemy({ maxHp: 9999 }), 2)
+    applyEffects(knees, 'hero', OPENINGS.knees.outcomes[0]?.effects ?? [])
+    expect(knees.enemy.statuses.map((s) => s.kind)).toContain('hobbled')
+
+    const arms = makeCombat(makeHero({ spd: 999 }), makeEnemy({ maxHp: 9999 }), 2)
+    applyEffects(arms, 'hero', OPENINGS.arms.outcomes[0]?.effects ?? [])
+    expect(arms.enemy.statuses.map((s) => s.kind)).toContain('weakened')
   })
 })
 

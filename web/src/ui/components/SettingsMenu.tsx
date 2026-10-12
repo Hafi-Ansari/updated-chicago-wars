@@ -41,10 +41,26 @@ export function SettingsMenu({ settings, onChange, onClose, onQuit }: SettingsMe
       <label className="setting setting--toggle">
         <input
           type="checkbox"
+          checked={settings.music}
+          onChange={(e) => onChange({ ...settings, music: e.target.checked })}
+        />
+        <span>Music</span>
+      </label>
+      <label className="setting setting--toggle">
+        <input
+          type="checkbox"
+          checked={settings.sfx}
+          onChange={(e) => onChange({ ...settings, sfx: e.target.checked })}
+        />
+        <span>Sound effects</span>
+      </label>
+      <label className="setting setting--toggle">
+        <input
+          type="checkbox"
           checked={settings.scanlines}
           onChange={(e) => onChange({ ...settings, scanlines: e.target.checked })}
         />
-        <span>CRT scanlines</span>
+        <span>CRT scanlines (old-TV stripes over the stage)</span>
       </label>
       {onQuit && (
         <button type="button" className="btn setting__quit" onClick={onQuit}>

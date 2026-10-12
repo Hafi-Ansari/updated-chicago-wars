@@ -10,6 +10,8 @@ const STATUS_TAGS: Record<StatusKind, { label: string; color: string }> = {
   dazed: { label: 'DZD', color: '#c9b2ff' },
   frostbit: { label: 'FRZ', color: '#a4e9ff' },
   vibing: { label: 'VIB', color: 'var(--reward)' },
+  weakened: { label: 'WKN', color: '#ffb3b3' },
+  hobbled: { label: 'HBL', color: '#e0c27a' },
 }
 
 interface HpBoxProps {

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { NEIGHBORHOODS } from '../../content/names'
 import { BLOCKS_PER_RUN, type GameEvent, type GameState } from '../../engine'
+import { useGameAudio } from '../audio/useGameAudio'
 import { ActionPanel } from '../components/ActionPanel'
 import { SettingsMenu } from '../components/SettingsMenu'
 import { StatsCard } from '../components/StatsCard'
@@ -50,6 +51,7 @@ function promptFor(state: GameState): string {
 
 export function GameScreen({ controller, settings, onSettings }: GameScreenProps) {
   const { shown, game, current, display, busy, foeHidden, act, advance, quit } = controller
+  useGameAudio(shown, current, busy)
   const [history, setHistory] = useState<Line[]>([])
   const [panel, setPanel] = useState<'stats' | 'settings' | null>(null)
 
@@ -102,7 +104,19 @@ export function GameScreen({ controller, settings, onSettings }: GameScreenProps
         </span>
         <button
           type="button"
-          className="btn hud__settings"
+          className="btn hud__icon"
+          onClick={() => {
+            const on = !(settings.music || settings.sfx)
+            onSettings({ ...settings, music: on, sfx: on })
+          }}
+          aria-label={settings.music || settings.sfx ? 'Mute sound' : 'Unmute sound'}
+          aria-pressed={!(settings.music || settings.sfx)}
+        >
+          {settings.music || settings.sfx ? '🔊' : '🔇'}
+        </button>
+        <button
+          type="button"
+          className="btn hud__icon"
           onClick={() => setPanel('settings')}
           aria-label="Settings"
         >

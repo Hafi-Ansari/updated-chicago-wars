@@ -19,12 +19,14 @@ export const LEVEL_UP = {
   gains: { maxHp: 8, atk: 2, def: 1, spd: 1 },
 } as const satisfies { winsPerLevel: number; gains: Partial<Record<BoostableStat, number>> }
 
-/** Moves the hero can carry at once (the Gen-3 four). */
-export const MAX_MOVES = 4
-/** New moves offered per level-up. */
+/** Moves the hero can carry at once. */
+export const MAX_MOVES = 6
+/** The one move that can never be forgotten. */
+export const UNFORGETTABLE_MOVE = 'jab'
+/** New moves offered after every win. */
 export const MOVES_OFFERED = 2
 /** Highest move tier offered at a given level. */
-export const maxMoveTier = (level: number): number => (level >= 5 ? 3 : level >= 3 ? 2 : 1)
+export const maxMoveTier = (level: number): number => (level >= 4 ? 3 : level >= 2 ? 2 : 1)
 
 // ── Damage ───────────────────────────────────────────────────────────────────
 
@@ -49,13 +51,15 @@ export const HYPED_CRIT_BONUS = 0.25
 export const GUARDED_DAMAGE_MULT = 0.5
 export const FROSTBIT_SPD_MULT = 0.5
 export const VIBING_HEAL_PCT = 0.08
+export const WEAKENED_ATK_MULT = 0.65
+export const HOBBLED_SPD_MULT = 0.5
 /** Chance a dazed fighter hurts themselves instead of acting, and how hard. */
 export const DAZED = { selfHitChance: 0.35, power: 0.4 }
 
 // ── Openings ─────────────────────────────────────────────────────────────────
 
 /** Chance per round that the enemy charges recklessly and leaves an opening. */
-export const OPENING_CHANCE = 0.18
+export const OPENING_CHANCE = 0.3
 export const OPENING_TARGETS_OFFERED = 3
 
 // ── Run structure ────────────────────────────────────────────────────────────

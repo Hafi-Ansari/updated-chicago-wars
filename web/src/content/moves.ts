@@ -240,6 +240,105 @@ export const MOVES: Record<MoveId, MoveDef> = {
     ],
     sayChance: 0.6,
   },
+  // ── Added moves ────────────────────────────────────────────────────────────
+  shoulderCheck: {
+    id: 'shoulderCheck',
+    name: 'Shoulder Check',
+    description: 'Always goes first. A quick bump that hits a little lighter than a Jab.',
+    pp: 8,
+    accuracy: 1,
+    priority: 1,
+    tier: 1,
+    effects: [{ type: 'damage', power: 0.8 }],
+    lines: [
+      "Excuse me, pardon me, coming through,\nmy shoulder's got a meeting with you.",
+      "Rush hour on the Red Line taught me well,\nI'll shoulder through you like the morning bell.",
+    ],
+  },
+  uppercut: {
+    id: 'uppercut',
+    name: 'Uppercut',
+    description: 'Straight up the middle. Strong, a little less accurate.',
+    pp: 6,
+    accuracy: 0.85,
+    priority: 0,
+    tier: 1,
+    effects: [{ type: 'damage', power: 1.35 }],
+    lines: [
+      "From the floor to the ceiling, chin to the sky,\nthis uppercut's teaching your jaw how to fly.",
+      "Low to high, that's the elevator ride,\nnext stop: the floor, with your pride.",
+    ],
+  },
+  bodegaCat: {
+    id: 'bodegaCat',
+    name: 'Bodega Cat',
+    description: 'Call in the corner store cat: three scratches that may cause bleeding.',
+    pp: 5,
+    accuracy: 0.95,
+    priority: 0,
+    tier: 1,
+    effects: [
+      { type: 'damage', power: 0.4, hits: 3 },
+      { type: 'status', target: 'foe', status: 'bleeding', turns: 2, chance: 0.4 },
+    ],
+    lines: [
+      "Here kitty kitty, the bodega's best,\nscratch this fool and I'll handle the rest.",
+      'Nine lives deep and mean as can be,\nthe corner store cat rides for me.',
+    ],
+    sayChance: 0.6,
+  },
+  legSweep: {
+    id: 'legSweep',
+    name: 'Leg Sweep',
+    description:
+      'Take their legs out: light damage, may stun, and leaves them Hobbled (Speed down).',
+    pp: 5,
+    accuracy: 0.85,
+    priority: 0,
+    tier: 2,
+    effects: [
+      { type: 'damage', power: 0.6 },
+      { type: 'status', target: 'foe', status: 'stunned', turns: 1, chance: 0.4 },
+      { type: 'status', target: 'foe', status: 'hobbled', turns: 3 },
+    ],
+    lines: [
+      "Sweep the leg, that's the classic plan,\nnow you're on the floor, not the man.",
+      'Down low, down low, watch your feet,\nyou just got swept right off the street.',
+    ],
+  },
+  secondWind: {
+    id: 'secondWind',
+    name: 'Second Wind',
+    description: 'Catch your breath and start Vibing: regenerate HP for 4 turns.',
+    pp: 3,
+    accuracy: 1,
+    priority: 0,
+    tier: 2,
+    effects: [{ type: 'status', target: 'self', status: 'vibing', turns: 4 }],
+    lines: [
+      "Deep breath in, let the bad vibes out,\nsecond wind's here, now I'm back to the bout.",
+      "Lake breeze coming through, cool and clean,\nnow I'm the freshest you've ever seen.",
+    ],
+    sayChance: 0.7,
+  },
+  ropeADope: {
+    id: 'ropeADope',
+    name: 'Rope-a-Dope',
+    description: 'Cover up and let them tire out: Guarded for 2 turns and PUMPED for 3.',
+    pp: 3,
+    accuracy: 1,
+    priority: 0,
+    tier: 3,
+    effects: [
+      { type: 'status', target: 'self', status: 'guarded', turns: 2 },
+      { type: 'status', target: 'self', status: 'pumped', turns: 3 },
+    ],
+    lines: [
+      "Lean on the ropes, let 'em swing and tire,\nthen I come back hotter than a Chicago fire.",
+      "Float like a butterfly, cover like a shell,\nwhen you're out of gas, I'mma ring your bell.",
+    ],
+    sayChance: 0.7,
+  },
 }
 
 export const STARTING_MOVES: readonly MoveId[] = ['jab', 'talkTrash']

@@ -7,7 +7,7 @@
 import { ENEMIES } from '../../content/enemies'
 import { HERO_LINES } from '../../content/hero'
 import { MOVES } from '../../content/moves'
-import { OPENING_INTRO, OPENING_ORDER, OPENINGS } from '../../content/openings'
+import { OPENING_ORDER, OPENING_SCENARIOS, OPENINGS } from '../../content/openings'
 import { SKILLS } from '../../content/skills'
 import type { EnemyMove } from '../../content/types'
 import {
@@ -195,9 +195,10 @@ function maybeOpening(ctx: CombatContext): void {
   if (outcome(ctx) !== 'ongoing' || hasStatus(ctx.enemy, 'stunned')) return
   if (!ctx.rng.chance(OPENING_CHANCE)) return
 
-  const offered = ctx.rng.sample(OPENING_ORDER, OPENING_TARGETS_OFFERED)
+  const scenario = ctx.pick('openings', OPENING_SCENARIOS)
+  const offered = ctx.rng.sample(scenario.targets, OPENING_TARGETS_OFFERED)
   ctx.battle.opening = OPENING_ORDER.filter((t) => offered.includes(t))
-  for (const line of OPENING_INTRO) narrate(ctx, line, 'info')
+  for (const line of scenario.intro) narrate(ctx, line, 'info')
 }
 
 function tickCooldowns(ctx: CombatContext): void {

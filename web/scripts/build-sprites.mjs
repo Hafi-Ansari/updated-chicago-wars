@@ -10,7 +10,7 @@
  *   [front, back, faint×6]   (64×64 each)
  *
  * It also writes the attribution the licenses require (CC-BY-SA 3.0 / GPL 3 /
- * OGA-BY 3.0): public/CREDITS.md and src/content/credits.generated.json.
+ * OGA-BY 3.0): public/CREDITS.md.
  */
 
 import { existsSync } from 'node:fs'
@@ -309,15 +309,6 @@ async function buildCharacter(id, recipe) {
 
 async function writeCredits() {
   const list = [...credits.values()].sort((a, b) => a.file.localeCompare(b.file))
-  await writeFile(
-    join(ROOT, 'src', 'content', 'credits.generated.json'),
-    `${JSON.stringify(
-      list.map(({ file, authors, licenses, urls }) => ({ file, authors, licenses, urls })),
-      null,
-      2,
-    )}\n`,
-  )
-
   const md = [
     '# Art credits',
     '',

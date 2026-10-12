@@ -4,6 +4,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
+import { sfx, type Voice } from '../audio/sfx'
 import type { Line } from '../narration'
 import type { TextSpeed } from '../storage'
 
@@ -54,10 +55,20 @@ export function TextBox({
     return () => clearTimeout(timer)
   }, [line, done, autoAdvance, onAdvance, text.length])
 
+  // Typewriter blips: every other letter, pitched by who is talking.
+  const voice: Voice = line?.speaker?.side ?? 'narrator'
+  // biome-ignore lint/correctness/useExhaustiveDependencies: one blip per typed character
+  useEffect(() => {
+    if (!line || MS_PER_CHAR[speed] === 0 || typed % 2 !== 0) return
+    if (text[typed - 1]?.trim()) sfx.blip(voice)
+  }, [typed])
+
   const handle = useCallback(() => {
     if (!line) return
-    if (done) onAdvance()
-    else setTyped(text.length)
+    if (done) {
+      sfx.advance()
+      onAdvance()
+    } else setTyped(text.length)
   }, [line, done, onAdvance, text.length])
 
   useEffect(() => {

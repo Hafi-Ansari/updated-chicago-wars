@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
+import { SKILLS } from '../src/content/skills'
 import { MAX_MOVES } from '../src/engine/balance'
 import { choicesFor } from '../src/engine/dialogue'
 import { pickFresh } from '../src/engine/lines'
 import { createRng } from '../src/engine/rng'
 import { newGame, step } from '../src/engine/step'
 import type { GameState } from '../src/engine/types'
+import { withMoves } from './helpers'
 
 const jab = { type: 'useMove', move: 'jab' } as const
 
@@ -83,10 +85,10 @@ describe('step', () => {
     expect(JSON.stringify(battle)).toBe(snapshot)
   })
 
-  it('winning awards clout, refills PP and returns to exploring (or learning)', () => {
+  it('winning awards clout, refills PP and offers new moves', () => {
     const before = firstBattle()
     const after = winBattle(before)
-    expect(['explore', 'learnMove']).toContain(after.phase.kind)
+    expect(after.phase.kind).toBe('learnMove')
     expect(after.hero.clout).toBeGreaterThan(before.hero.clout)
     expect(after.hero.moves.every((m) => m.pp === null || m.pp > 0)).toBe(true)
   })
@@ -112,7 +114,7 @@ describe('vendors', () => {
     state = { ...state, hero: { ...state.hero, clout: 100 } }
     const bought = step(state, { type: 'buy', skill: 'taser' }).state
     expect(bought.hero.skills).toContain('taser')
-    expect(bought.hero.clout).toBe(55)
+    expect(bought.hero.clout).toBe(100 - SKILLS.taser.price)
     expect(step(bought, { type: 'buy', skill: 'taser' }).state).toBe(bought)
   })
 
@@ -134,25 +136,39 @@ describe('vendors', () => {
     expect(state.hero.clout).toBe(500 - lesson.price)
   })
 
-  it('learning a fifth move requires forgetting one', () => {
+  it('learning a seventh move requires forgetting one, and never Jab', () => {
     let state = newGame('Tester', 5).state
     state = {
       ...state,
       hero: {
         ...state.hero,
-        moves: [
-          { id: 'jab', pp: null },
-          { id: 'talkTrash', pp: 6 },
-          { id: 'haymaker', pp: 5 },
-          { id: 'twoPiece', pp: 8 },
-        ],
+        moves: withMoves('jab', 'talkTrash', 'haymaker', 'twoPiece', 'uppercut', 'bodegaCat'),
       },
       phase: { kind: 'learnMove', offered: ['hypeUp'], price: 0 },
     }
     expect(step(state, { type: 'learnMove', move: 'hypeUp' }).state).toBe(state)
+    expect(step(state, { type: 'learnMove', move: 'hypeUp', replace: 'jab' }).state).toBe(state)
     const learned = step(state, { type: 'learnMove', move: 'hypeUp', replace: 'haymaker' }).state
-    expect(learned.hero.moves.map((m) => m.id)).toEqual(['jab', 'talkTrash', 'hypeUp', 'twoPiece'])
+    expect(learned.hero.moves.map((m) => m.id)).toEqual([
+      'jab',
+      'talkTrash',
+      'hypeUp',
+      'twoPiece',
+      'uppercut',
+      'bodegaCat',
+    ])
     expect(learned.hero.moves).toHaveLength(MAX_MOVES)
+  })
+
+  it('passive gear permanently boosts stats', () => {
+    let state = newGame('Tester', 3).state
+    state = step(state, { type: 'visit', npc: 'plug' }).state
+    state = step(state, { type: 'choose', choice: 'browse' }).state
+    state = { ...state, hero: { ...state.hero, clout: 100 } }
+    const before = state.hero.stats
+    const after = step(state, { type: 'buy', skill: 'pufferJacket' }).state.hero.stats
+    expect(after.def).toBe(before.def + (SKILLS.pufferJacket.bonus?.def ?? 0))
+    expect(after.maxHp).toBe(before.maxHp + (SKILLS.pufferJacket.bonus?.maxHp ?? 0))
   })
 
   it('dialogue hides one-time choices after use', () => {

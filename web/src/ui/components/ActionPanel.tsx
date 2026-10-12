@@ -17,6 +17,7 @@ import {
   type MoveId,
   type MoveSlot,
   type NpcId,
+  UNFORGETTABLE_MOVE,
 } from '../../engine'
 import { Menu, type MenuOption } from './Menu'
 
@@ -199,14 +200,16 @@ export function ActionPanel({ state, act, onShowStats }: ActionPanelProps) {
             columns={2}
             onBack={() => setSubmenu(null)}
             options={[
-              ...hero.moves.map(
-                (slot): MenuOption => ({
-                  key: slot.id,
-                  label: `Forget ${MOVES[slot.id].name}`,
-                  hint: MOVES[slot.id].description,
-                  onSelect: () => act({ type: 'learnMove', move: learning, replace: slot.id }),
-                }),
-              ),
+              ...hero.moves
+                .filter((slot) => slot.id !== UNFORGETTABLE_MOVE)
+                .map(
+                  (slot): MenuOption => ({
+                    key: slot.id,
+                    label: `Forget ${MOVES[slot.id].name}`,
+                    hint: MOVES[slot.id].description,
+                    onSelect: () => act({ type: 'learnMove', move: learning, replace: slot.id }),
+                  }),
+                ),
               { key: 'back', label: 'Back', sub: 'Esc', onSelect: () => setSubmenu(null) },
             ]}
           />

@@ -27,6 +27,7 @@ import {
   maxMoveTier,
   POST_FIGHT_HEAL,
   SAY_CHANCE,
+  UNFORGETTABLE_MOVE,
 } from './balance'
 import type { CombatContext } from './combat/context'
 import { applyHeal } from './combat/damage'
@@ -252,6 +253,11 @@ function buy(state: GameState, skill: SkillId, plugName: string, ctx: StepContex
   state.stats.cloutSpent += def.price
   ctx.emit({ type: 'clout', amount: -def.price, total: hero.clout })
   ctx.emit({ type: 'skillLearned', skill })
+  for (const [stat, amount] of Object.entries(def.bonus ?? {}) as [BoostableStat, number][]) {
+    hero.stats[stat] += amount
+    if (stat === 'maxHp') hero.hp += amount
+    ctx.emit({ type: 'statUp', stat, amount })
+  }
   ctx.emit({
     type: 'say',
     speaker: plugName,
@@ -276,6 +282,7 @@ function learnMove(
   if (hero.clout < price) return false
 
   const full = hero.moves.length >= MAX_MOVES
+  if (replace === UNFORGETTABLE_MOVE) return false
   const replaceIndex = replace ? hero.moves.findIndex((m) => m.id === replace) : -1
   if (full && replaceIndex < 0) return false
 
@@ -297,7 +304,7 @@ function learnMove(
   return true
 }
 
-/** Offers new moves after a level-up, if there are any left to learn. */
+/** Offers new moves after every win, if there are any left to learn. */
 function offerMoves(state: GameState, ctx: StepContext): boolean {
   const pool = learnableMoves(state.hero, maxMoveTier(state.hero.level))
   if (pool.length === 0) return false
@@ -449,10 +456,8 @@ function endBattle(
       if (healed > 0) ctx.emit({ type: 'heal', target: 'hero', amount: healed, hpAfter: hero.hp })
 
       state.phase = { kind: 'explore' }
-      if (stats.enemiesDefeated % LEVEL_UP.winsPerLevel === 0) {
-        levelUp(state, ctx)
-        offerMoves(state, ctx)
-      }
+      if (stats.enemiesDefeated % LEVEL_UP.winsPerLevel === 0) levelUp(state, ctx)
+      offerMoves(state, ctx)
       return
     }
     default:

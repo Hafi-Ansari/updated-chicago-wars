@@ -1,5 +1,6 @@
 import type { Range } from '../engine/balance'
 import type {
+  BoostableStat,
   Effect,
   EnemyKind,
   MoveId,
@@ -48,6 +49,8 @@ export interface SkillDef {
   description: string
   /** Passive skills work automatically and never appear in the battle menu. */
   passive: boolean
+  /** Permanent stat bonus applied when bought (passive gear). */
+  bonus?: Partial<Record<BoostableStat, number>>
   cooldown: number
   /** Narration when used. */
   useText: Text[]

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { sfx } from '../audio/sfx'
 
 export interface MenuOption {
   key: string
@@ -20,10 +21,16 @@ interface MenuProps {
   label: string
 }
 
+function select(option: MenuOption): void {
+  if (option.key === 'back') sfx.back()
+  else sfx.select()
+  option.onSelect()
+}
+
 /**
  * A list of actions; number keys 1–9 pick them, Esc goes back. Like the Gen-3
  * move menu, buttons stay compact and the active option's description shows
- * underneath.
+ * underneath (or inline on touch screens).
  */
 export function Menu({ options, columns = 1, onBack, label }: MenuProps) {
   const [active, setActive] = useState<string | null>(null)
@@ -34,6 +41,7 @@ export function Menu({ options, columns = 1, onBack, label }: MenuProps) {
       if (e.target instanceof HTMLInputElement) return
       if ((e.key === 'Escape' || e.key === 'Backspace') && onBack) {
         e.preventDefault()
+        sfx.back()
         onBack()
         return
       }
@@ -41,7 +49,7 @@ export function Menu({ options, columns = 1, onBack, label }: MenuProps) {
       const option = options[index]
       if (option && !option.disabled) {
         e.preventDefault()
-        option.onSelect()
+        select(option)
       }
     }
     window.addEventListener('keydown', onKey)
@@ -50,20 +58,27 @@ export function Menu({ options, columns = 1, onBack, label }: MenuProps) {
 
   return (
     <div className="menu-wrap">
-      <nav className={`menu menu--cols-${columns}`} aria-label={label}>
+      <nav
+        className={`menu menu--cols-${columns} ${detail ? 'menu--has-hints' : ''}`}
+        aria-label={label}
+      >
         {options.map((option, i) => (
           <button
             key={option.key}
             type="button"
             className={`btn ${option.primary ? 'btn--primary' : ''}`}
             disabled={option.disabled}
-            onClick={option.onSelect}
+            onClick={() => select(option)}
             onMouseEnter={() => setActive(option.key)}
             onFocus={() => setActive(option.key)}
             title={option.hint}
           >
             <span className="key">{i + 1}</span>
-            <span className="btn__label">{option.label}</span>
+            <span className="btn__label">
+              {option.label}
+              {/* Touch screens have no hover, so they show descriptions inline instead. */}
+              {option.hint && <span className="btn__hint">{option.hint}</span>}
+            </span>
             {option.sub && <span className="sub">{option.sub}</span>}
           </button>
         ))}

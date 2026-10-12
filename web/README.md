@@ -64,9 +64,8 @@ by `scripts/build-sprites.mjs`. Each character is a recipe of layers and colors.
 pins the generator to a specific commit, caches downloads in `scripts/.lpc-cache/`, and writes:
 
 - `public/sprites/<id>.png`: 8 frames of 64×64 (front, back, faint×6)
-- `public/CREDITS.md` and `src/content/credits.generated.json`: the attribution the layer
-  licenses require (CC-BY-SA 3.0 / GPL 3.0 / OGA-BY 3.0). The in-game Credits screen reads the
-  JSON.
+- `public/CREDITS.md`: the attribution the layer licenses require (CC-BY-SA 3.0 / GPL 3.0 /
+  OGA-BY 3.0). The in-game Credits screen links to it.
 
 To change a character's outfit, edit its recipe in `CAST` and run `npm run sprites`. To replace
 the art entirely, drop in PNGs with the same strip layout.
@@ -74,6 +73,15 @@ the art entirely, drop in PNGs with the same strip layout.
 The skyline is hand-placed SVG pixel art (`src/ui/stage/Skyline.tsx`). Fonts are Silkscreen and
 Pixelify Sans (OFL), self-hosted through `@fontsource`. The palette is Dracula, defined as tokens
 in `src/ui/theme.css`.
+
+## Audio
+
+All music and sound effects are synthesized in the browser with the Web Audio API. There are
+no audio files. `src/ui/audio/` has a tiny synth (pulse, triangle and noise channels like old
+consoles), a step sequencer, and the songs. The two original chiptune loops are "Night on the
+Block" (exploring) and "Corner Clash" (battles), plus a faster, higher boss version. Songs are
+written as text, one 16th note per token, in `music.ts`. Browsers only allow audio after a tap
+or key press, so audio unlocks on the first interaction.
 
 ## Deploying
 

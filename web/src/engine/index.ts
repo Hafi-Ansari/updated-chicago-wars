@@ -1,4 +1,4 @@
-export { BLOCKS_PER_RUN, MAX_MOVES } from './balance'
+export { BLOCKS_PER_RUN, MAX_MOVES, UNFORGETTABLE_MOVE } from './balance'
 export { canUseMove, canUseSkill } from './combat/turn'
 export { type ChoiceView, choicesFor } from './dialogue'
 export { createRng } from './rng'

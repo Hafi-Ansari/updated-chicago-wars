@@ -13,7 +13,21 @@ export type Side = 'hero' | 'enemy'
 export type EnemyKind = 'goon' | 'thug' | 'biker' | 'gangLeader' | 'gangRapper' | 'boss'
 
 /** Hidden gear sold by the Plug (the original game's "hidden skills"). */
-export type SkillId = 'airpods' | 'aviators' | 'durag' | 'taser' | 'glock'
+export type SkillId =
+  | 'airpods'
+  | 'aviators'
+  | 'durag'
+  | 'taser'
+  | 'glock'
+  | 'airHorn'
+  | 'giardiniera'
+  | 'bikeLock'
+  | 'pigeonWhistle'
+  | 'energyDrink'
+  | 'bucketDrum'
+  | 'pufferJacket'
+  | 'jordans'
+  | 'goldGrill'
 
 /** Fighting moves the hero learns by leveling up or training with the Gangsta. */
 export type MoveId =
@@ -31,6 +45,12 @@ export type MoveId =
   | 'chainSwing'
   | 'deepDishSlam'
   | 'micDrop'
+  | 'shoulderCheck'
+  | 'uppercut'
+  | 'bodegaCat'
+  | 'legSweep'
+  | 'secondWind'
+  | 'ropeADope'
 
 export type StatusKind =
   | 'stunned'
@@ -42,12 +62,24 @@ export type StatusKind =
   | 'dazed'
   | 'frostbit'
   | 'vibing'
+  | 'weakened'
+  | 'hobbled'
 
-export type OpeningTarget = 'crotch' | 'legs' | 'torso' | 'neck' | 'head'
+export type OpeningTarget =
+  | 'eyes'
+  | 'head'
+  | 'neck'
+  | 'arms'
+  | 'ribs'
+  | 'torso'
+  | 'back'
+  | 'crotch'
+  | 'knees'
+  | 'legs'
 
 export type NpcId = 'gangsta' | 'plug' | 'hotDogVendor'
 
-export type BoostableStat = 'maxHp' | 'atk' | 'def' | 'spd'
+export type BoostableStat = 'maxHp' | 'atk' | 'def' | 'spd' | 'crit'
 
 // ── Combatants ───────────────────────────────────────────────────────────────
 
@@ -82,7 +114,7 @@ export interface MoveSlot {
 export interface Hero extends Combatant {
   level: number
   clout: number
-  /** Up to MAX_MOVES moves, in menu order. */
+  /** Up to MAX_MOVES moves, in menu order. Jab can never be forgotten. */
   moves: MoveSlot[]
   skills: SkillId[]
   /** Rounds remaining until each gear skill can be used again. Missing or 0 = ready. */

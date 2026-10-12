@@ -42,12 +42,16 @@ export interface Settings {
   textSpeed: TextSpeed
   autoAdvance: boolean
   scanlines: boolean
+  music: boolean
+  sfx: boolean
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   textSpeed: 'normal',
-  autoAdvance: true,
+  autoAdvance: false,
   scanlines: false,
+  music: true,
+  sfx: true,
 }
 
 export const loadSettings = (): Settings => ({
