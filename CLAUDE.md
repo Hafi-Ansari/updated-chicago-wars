@@ -6,12 +6,58 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 "Chicago Wars": two versions of the same game live here.
 
-- **`web/`**: the current version, a browser RPG rebuilt from scratch in Vite + React + TypeScript. **This is where active work happens.** See `web/README.md` for commands and architecture. Key points: `src/engine/` is a pure, deterministic engine (`step(state, action) → { state, events }`, seeded RNG stored in `GameState`) that must not import React, `Math.random` or `Date`; tuning numbers live in `src/engine/balance.ts`; run `npm test` (includes a balance simulation that fails if the win rate or run length drifts) and `npm run lint` after changes.
-- **Repo root `*.java`**: the original 2020 text-based console RPG (AP CS project built to practice OOP, inheritance and polymorphism), kept for reference. Originally developed in BlueJ; BlueJ metadata and `.class` files are gitignored. The rest of this file describes the Java version.
+- **`web/`**: the current version, a browser RPG rebuilt from scratch in Vite + React 19 + TypeScript (strict). A static SPA with no backend; saves live in `localStorage`. **This is where active work happens.** `web/README.md` covers gameplay systems, sprites (LPC generator), synthesized audio and deploying.
+- **Repo root `*.java`**: the original 2020 text-based console RPG (AP CS project), kept for reference. See [Java version](#java-version-reference) at the end.
 
-## Build & run (Java)
+## Web: commands
 
-No build tool, dependencies or tests. All sources are in the default package at the repo root.
+Run from `web/` (run `npm install` first if `node_modules` is missing):
+
+```sh
+npm run dev          # Vite dev server
+npm test             # all tests, including the 2,000-run balance simulation
+npm run sim          # balance report: win rate, run length, deaths by block
+npm run lint         # Biome lint + format check; `npm run format` auto-fixes
+npm run typecheck    # tsc -b (app, node and test projects)
+npm run build        # typecheck + production build into dist/
+npm run sprites      # rebuild public/sprites/*.png from the LPC generator (needs network)
+```
+
+Single test file or test name: `npx vitest run test/step.test.ts`, `npx vitest run -t "is deterministic"`. After changes, run `npm test` and `npm run lint`.
+
+Style is enforced by Biome: single quotes, no semicolons, trailing commas, 2-space indent, 100-column lines.
+
+## Web: architecture
+
+Three layers, one direction: `src/content/` (data) → `src/engine/` (rules) → `src/ui/` (React). The UI also reads content directly, e.g. move and skill names.
+
+- **Engine API**: `newGame(name, seed)` and `step(state, action) → { state, events }` in `src/engine/step.ts`; the UI imports through the `src/engine/index.ts` barrel. `step` runs an immer `produce` over `GameState` and dispatches on `state.phase.kind` (`explore | battle | dialogue | shop | learnMove | gameOver | victory`) in `handle()`. An invalid action returns **the same state object**, and `useGame` relies on that reference check to ignore it. The RNG state is written back only when the action was valid.
+- **Purity**: `src/engine/` and `src/content/` must not use `Math.random`, `Date` or React. A Biome `noRestrictedImports` override and `test/purity.test.ts` enforce this. All randomness goes through the seeded `Rng` (`src/engine/rng.ts`, mulberry32, state is a single uint32 stored in `GameState.rng`). `GameState` must stay plain JSON (no classes or functions) because it is saved as-is.
+- **Contexts**: engine helpers receive a `StepContext` (`rng`, `emit(event)`, `pick(key, pool)`). `pick` uses `pickFresh` to avoid recently used lines and records them in `state.recent`. Combat code gets a `CombatContext` that adds `hero`, `enemy`, `battle` and run stats (`src/engine/combat/context.ts`).
+- **Effects are data**: one `Effect` union (`src/engine/types.ts`) describes what hero moves, Plug gear (`SKILLS`), enemy moves and openings do. `applyEffects` in `src/engine/combat/effects.ts` resolves them. All damage goes through `rollAttack` / `applyDamage` / `applyHeal` in `combat/damage.ts`. A battle round's order and the "opening" mini-choice live in `combat/turn.ts`.
+- **Events, not text**: the engine emits structured `GameEvent`s. The UI consumes them in several places: `src/ui/narration.ts` turns them into text-box lines (the engine never formats combat text itself), `src/ui/useGame.ts` queues and plays them one at a time while updating displayed HP and clout, `src/ui/stage/Stage.tsx` animates them and `src/ui/audio/useGameAudio.ts` plays sound effects. `useGame` keeps the finished battle on screen (`shown` lags `game`) until its last events have played.
+- **Dialogue**: NPCs (`gangsta`, `plug`, `hotDogVendor`) are node graphs in `src/content/npcs.ts` (`DialogueNode` with `lines`, `choices`, `require` conditions, `NpcEffect`s, `next`), walked by `src/engine/dialogue.ts`. Text placeholders such as `{hero}` and `{enemy}` are filled by `fill()` (`src/engine/text.ts`); the full list is in `src/content/types.ts`.
+- **Tuning**: global numbers are in `src/engine/balance.ts`. Per-item numbers sit with their content: move power and PP in `moves.ts`, gear price and cooldown in `skills.ts`, enemy move weights in `enemies.ts`, opening odds in `openings.ts`. `test/balance.sim.test.ts` runs a bot (`test/sim.ts`) through 2,000 seeded runs. It fails if the win rate leaves 30–70%, if fights average outside 2–6 rounds, or if a run averages outside 40–150 actions. Check `npm run sim` after any tuning or content change.
+
+### Adding things
+
+Ids are string unions in `src/engine/types.ts`, and content is typed `Record<Id, Def>`, so `npm run typecheck` lists every place a new id must be defined. Beyond that:
+
+- **New `StatusKind`**: add wording to `STATUS_TEXT` in `src/ui/narration.ts`, add a tag to `STATUS_TAGS` in `src/ui/stage/HpBox.tsx` and implement its behavior in `src/engine/combat/status.ts` / `stats.ts`.
+- **New `EnemyKind`**: add stats to `ENEMY_STATS` and `enemyWeights` in `balance.ts`, a def to `ENEMIES` and a sprite. Sprites load by id from `public/sprites/<id>.png`; add a recipe to `CAST` in `scripts/build-sprites.mjs`, then run `npm run sprites`.
+- **New phase or action**: handle it in `handle()` (`step.ts`), in `src/ui/components/ActionPanel.tsx` and in the bot's `chooseAction` in `test/sim.ts`. The bot is what keeps the balance test passing.
+- **New `GameEvent`**: handle it in `narration.ts`, plus `useGame.ts`, `Stage.tsx` and `useGameAudio.ts` if it changes HP or clout or needs animation or sound.
+
+## Web: gotchas
+
+- **Save format**: `GameState.version` is `2` in three places: the type in `types.ts`, `newGame` in `step.ts`, and `loadSave` plus the `chicago-wars/save/v2` key in `src/ui/storage.ts`. Saves are not migrated, so bump all three together when `GameState` changes shape incompatibly. Old saves are then silently dropped.
+- **Content tests** (`test/content.test.ts`): every spoken line of a character who raps (everyone except Goons, i.e. `rhymes: true`) must be a two-line bar with `\n` between the lines. The hero's battle lines and every move's `lines` must be bars too. Pools have minimum sizes.
+- **Music** is written as text in `src/ui/audio/music.ts`, one 16th note per token. `test/music.test.ts` requires every bar to have exactly 16 tokens, every layer to have the same bar count, and every note to be valid.
+- **Seeded tests**: tests seed the RNG and often loop over seed ranges. Adding, removing or reordering RNG calls (including adding lines to a pool that is `pick`ed) shifts every later roll. That can change seeded outcomes and the balance numbers.
+
+## Java version (reference)
+
+No build tool, dependencies or tests. All sources are in the default package at the repo root. Originally developed in BlueJ; BlueJ metadata and `.class` files are gitignored.
 
 ```sh
 javac -d out *.java
@@ -20,18 +66,16 @@ java -cp out RPGRunner
 
 The game is interactive (reads `System.in` with `Scanner`), so it can't be run unattended; to exercise it non-interactively, pipe input, e.g. `printf 'Name\n\n1\n...' | java -cp out RPGRunner`. Note `ScrollText` sleeps per character, so output is slow.
 
-## Architecture
-
 - **Class hierarchy**: `Character` (name, health) → `BattleCharacter` (attack, defense) → `Hero` (adds clout) / `Enemy`; `Character` → `NPC` → `Gangsta`, `Plug`. `Character` shadows `java.lang.Character` within this package.
 - **Game loop**: `RPGRunner.main` creates the `Hero` and the `HiddenSkill[5]` array, then calls `RandomEncounter.e(hero, skillArray)` until hero health ≤ 0.
 - **Encounters** (`RandomEncounter.e`, roll 1–10): 1–4 fight a random `Enemy` (name/type from `EnemyCreation`, stats set by type, then `Battling.fight`); 5–6 meet a `Gangsta` (talk for +10 clout, trade clout for attack/defense); 7–10 meet a `Plug` (buy hidden skills with clout).
 - **Combat** lives in static methods on `Battling`. Menu choices 1–3 are Fight/Run/Stats; choices 4–8 map to `skillArray[0..4]`. Defeating an enemy awards clout equal to its attack.
 - **Static utility classes**: `RNDM.i(low, high)` (inclusive random int, used everywhere for randomness), `EnemyCreation`, `RandomEncounter`.
 
-## Gotchas
+Gotchas:
 
-- `HiddenSkill.getState()` returns `locked` — `true` means **locked/unavailable**. Code checks `getState() == false` to allow use.
+- `HiddenSkill.getState()` returns `locked`: `true` means **locked/unavailable**. Code checks `getState() == false` to allow use.
 - Skill menu labels (`HiddenSkill.name`) are rewritten at the start of every encounter in `RandomEncounter.e`, including embedded `\t` padding to align the combat menu; the labels set in `RPGRunner` are overwritten. Plug prices and purchase messages are hardcoded per index in `Plug.trade`.
 - Enemy types are compared with `==` on string literals (works only because they're interned constants from `EnemyCreation.enemyType`); keep type strings in sync across `EnemyCreation`, `Enemy.introWords` and `RandomEncounter`.
 - `System.out.print('\u000C')` is a form feed that clears the BlueJ terminal; it's a no-op/garbage in other consoles.
-- Each method creates its own `Scanner(System.in)`; mixing `nextInt()` and `nextLine()` is handled with trailing `nextLine()` calls — preserve these when editing input handling.
+- Each method creates its own `Scanner(System.in)`; mixing `nextInt()` and `nextLine()` is handled with trailing `nextLine()` calls. Preserve these when editing input handling.
