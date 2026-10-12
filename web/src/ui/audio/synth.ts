@@ -17,6 +17,14 @@ export interface ToneOptions {
   volume?: number
   /** Pitch slide target in Hz over the note's duration. */
   slideTo?: number
+  /** Fade-in time in seconds (default 5ms; longer for soft pads). */
+  attack?: number
+  /** Pitch wobble: `rate` in Hz, `depth` in cents. Slow + shallow = worn tape. */
+  vibrato?: { rate: number; depth: number }
+  /** Plucked-string envelope: the note dies away over this many seconds (koto, guitar). */
+  pluck?: number
+  /** Scoop up into the note from this many semitones below (flute and vocal-style bends). */
+  bendIn?: number
   dest?: AudioNode
 }
 
@@ -64,13 +72,30 @@ class Synth {
       this.sfx.connect(this.ctx.destination)
       this.applyVolumes()
       // Pause everything while the tab is hidden.
-      document.addEventListener('visibilitychange', () => {
+      // Pause while the page is hidden (other tab, other app, screen locked) and
+      // pick back up on return. If the browser refuses to resume without a tap
+      // (common on mobile), the next tap resumes it via unlock().
+      const sync = () => {
         if (document.hidden) void this.ctx?.suspend()
-        else void this.ctx?.resume()
-      })
+        else this.resume()
+      }
+      document.addEventListener('visibilitychange', sync)
+      window.addEventListener('pageshow', sync)
       for (const fn of this.readyListeners.splice(0)) fn()
     }
-    if (this.ctx.state === 'suspended' && !document.hidden) void this.ctx.resume()
+    this.resume()
+  }
+
+  /**
+   * Resumes playback unless the page is hidden. Checks for anything but
+   * "running": iOS parks contexts in a non-standard "interrupted" state after
+   * app switches or calls, not just "suspended".
+   */
+  private resume(): void {
+    if (!this.ctx || document.hidden || this.ctx.state === 'running') return
+    this.ctx.resume().catch(() => {
+      // Needs a user gesture; the next tap calls unlock() and retries.
+    })
   }
 
   configure(musicOn: boolean, sfxOn: boolean): void {
@@ -98,26 +123,53 @@ class Synth {
     wave = 'square',
     volume = 1,
     slideTo,
+    attack = 0.005,
+    vibrato,
+    pluck,
+    bendIn,
     dest,
   }: ToneOptions): void {
     const { ctx } = this
     if (!ctx) return
     const start = at ?? ctx.currentTime + delay
+    // Plucked notes ring for at most `pluck` seconds.
+    const length = pluck ? Math.min(duration, pluck) : duration
     const osc = ctx.createOscillator()
     const gain = ctx.createGain()
     this.setWave(osc, wave)
-    osc.frequency.setValueAtTime(freq, start)
-    if (slideTo) osc.frequency.exponentialRampToValueAtTime(Math.max(20, slideTo), start + duration)
+    if (bendIn) {
+      osc.frequency.setValueAtTime(freq * 2 ** (-bendIn / 12), start)
+      osc.frequency.exponentialRampToValueAtTime(freq, start + 0.09)
+    } else {
+      osc.frequency.setValueAtTime(freq, start)
+    }
+    if (slideTo) osc.frequency.exponentialRampToValueAtTime(Math.max(20, slideTo), start + length)
 
-    // Short attack and release so notes don't click.
+    if (vibrato) {
+      const lfo = ctx.createOscillator()
+      const depth = ctx.createGain()
+      lfo.frequency.value = vibrato.rate
+      depth.gain.value = vibrato.depth
+      lfo.connect(depth).connect(osc.detune)
+      lfo.start(start)
+      lfo.stop(start + length + 0.02)
+    }
+
+    // Attack and release ramps so notes don't click.
+    const fadeIn = Math.min(attack, length / 2)
     gain.gain.setValueAtTime(0, start)
-    gain.gain.linearRampToValueAtTime(volume, start + 0.005)
-    gain.gain.setValueAtTime(volume, start + Math.max(0.006, duration - 0.03))
-    gain.gain.linearRampToValueAtTime(0, start + duration)
+    gain.gain.linearRampToValueAtTime(volume, start + fadeIn)
+    if (pluck) {
+      // Strings ring out and fade rather than holding steady.
+      gain.gain.exponentialRampToValueAtTime(0.001, start + length)
+    } else {
+      gain.gain.setValueAtTime(volume, start + Math.max(fadeIn + 0.001, length - 0.03))
+      gain.gain.linearRampToValueAtTime(0, start + length)
+    }
 
     osc.connect(gain).connect(dest ?? this.sfx ?? ctx.destination)
     osc.start(start)
-    osc.stop(start + duration + 0.02)
+    osc.stop(start + length + 0.02)
   }
 
   noise({
@@ -146,6 +198,30 @@ class Synth {
       .connect(dest ?? this.sfx ?? ctx.destination)
     src.start(start)
     src.stop(start + duration + 0.02)
+  }
+
+  /** A continuous, quiet noise bed (vinyl hiss). Returns a function that stops it. */
+  hiss(dest: AudioNode, volume: number): () => void {
+    const { ctx } = this
+    if (!ctx) return () => {}
+    const src = ctx.createBufferSource()
+    src.buffer = this.getNoise(ctx)
+    src.loop = true
+    const filter = ctx.createBiquadFilter()
+    filter.type = 'bandpass'
+    filter.frequency.value = 3000
+    filter.Q.value = 0.5
+    const gain = ctx.createGain()
+    gain.gain.value = volume
+    src.connect(filter).connect(gain).connect(dest)
+    src.start()
+    return () => {
+      try {
+        src.stop()
+      } catch {
+        // Already stopped.
+      }
+    }
   }
 
   private setWave(osc: OscillatorNode, wave: Wave): void {
