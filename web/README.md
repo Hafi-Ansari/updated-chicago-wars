@@ -80,8 +80,9 @@ All music and sound effects are synthesized in the browser with the Web Audio AP
 no audio files. `src/ui/audio/` has a tiny synth (pulse, triangle and noise channels like old
 consoles), a step sequencer, and the songs. "Blue Line Zen" plays while exploring: lo-fi hip-hop
 with a shakuhachi-style lead, koto plucks in the Japanese *in* scale, swung boom-bap drums with
-taiko fills, wind chimes and vinyl crackle, all on chip voices. "Corner Clash" plays in battles,
-with a faster, higher version for the boss. Songs are
+taiko fills, wind chimes and vinyl crackle, all on chip voices. "Shamisen Showdown" plays in battles:
+mid-tempo and low-pitched, driven by a plucked shamisen riff and taiko, with a slightly higher,
+faster version for the boss. Songs are
 written as text, one 16th note per token, in `music.ts`. Browsers only allow audio after a tap
 or key press, so audio unlocks on the first interaction.
 

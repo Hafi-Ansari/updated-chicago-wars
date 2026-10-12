@@ -200,52 +200,106 @@ const street: Song = {
   gain: 0.7,
 }
 
-/** "Corner Clash": driving and urgent, for fights. */
+const DM = ['D3', 'F3', 'A3']
+const EBMAJ7 = ['Eb3', 'G3', 'Bb3', 'D4']
+const BB = ['Bb2', 'D3', 'F3']
+const C = ['C3', 'E3', 'G3']
+const GM = ['G2', 'Bb2', 'D3']
+const A7 = ['A2', 'C#3', 'E3', 'G3']
+
+/** Shamisen riffs, one per chord: low, driving plucked 8th notes. */
+const SHAMISEN = {
+  Dm: 'D3 . D4 . A3 . D4 . D3 . D4 . Eb4 . D4 .',
+  Eb: 'Eb3 . Eb4 . Bb3 . Eb4 . Eb3 . G4 . F4 . Eb4 .',
+  Bb: 'Bb2 . Bb3 . F3 . Bb3 . Bb2 . D4 . C4 . Bb3 .',
+  C: 'C3 . C4 . G3 . C4 . C3 . E4 . D4 . C4 .',
+  Gm: 'G2 . G3 . D3 . G3 . G2 . Bb3 . A3 . G3 .',
+  A7: 'A2 . A3 . E3 . A3 . C#4 . E4 . G4 . A4 .',
+}
+
+/** Quarter-note bass pulse with a pickup into the next bar. */
+const PULSE = {
+  Dm: 'D2 - - - D2 - - - D2 - - - D2 - A1 -',
+  Eb: 'Eb2 - - - Eb2 - - - Eb2 - - - Eb2 - Bb1 -',
+  Bb: 'Bb1 - - - Bb1 - - - Bb1 - - - Bb1 - F2 -',
+  C: 'C2 - - - C2 - - - C2 - - - C2 - G1 -',
+  Gm: 'G1 - - - G1 - - - G1 - - - G1 - D2 -',
+  A7: 'A1 - - - A1 - - - A1 - - - E2 - C#2 -',
+}
+
+const BATTLE_FORM = ['Dm', 'Eb', 'Dm', 'Eb', 'Bb', 'C', 'Gm', 'A7'] as const
+
+/**
+ * "Shamisen Showdown": a samurai-standoff battle theme. Mid tempo, low-to-mid
+ * register, driven by a plucked shamisen riff and taiko rather than speed and
+ * pitch. A minor-key melody on the Japanese "in" scale over D minor, with the
+ * flat-second Eb chord for tension and an A7 that snaps back to the top.
+ */
 const battle: Song = {
-  bpm: 148,
+  bpm: 112,
   transpose: 0,
   swing: 0,
   lead: {
     line: [
-      'E5 - E5 - G5 - E5 - B5 - A5 - G5 - F#5 -',
-      'E5 - - - C5 - E5 - G5 - - - E5 - - -',
-      'F#5 - F#5 - A5 - F#5 - D6 - C6 - B5 - A5 -',
-      'B5 - - - A5 - G5 - F#5 - - - D#5 - - -',
-      'E5 - E5 - G5 - E5 - B5 - A5 - G5 - F#5 -',
-      'G5 - A5 - B5 - C6 - B5 - A5 - G5 - E5 -',
-      'F#5 - G5 - A5 - D6 - C6 - B5 - A5 - F#5 -',
-      'B5 - - - - - - - D#5 - F#5 - B5 - - -',
+      'D5 - - - A4 - - - Bb4 - A4 - G4 - A4 -',
+      'Eb5 - - - - - D5 - Bb4 - - - G4 - - -',
+      'D5 - - - A4 - - - Bb4 - A4 - G4 - F4 -',
+      'G4 - - - - - - - Eb4 - - - D4 - - -',
+      'F4 - - - Bb4 - - - D5 - - - C5 - Bb4 -',
+      'C5 - - - E5 - - - G5 - - - E5 - C5 -',
+      'D5 - - - Bb4 - - - G4 - A4 - Bb4 - D5 -',
+      'C#5 - - - - - - - E5 - - - A4 - - -',
+      'F5 - - - - - E5 - D5 - - - A4 - - -',
+      'Bb4 - - - - - G4 - Eb5 - - - D5 - - -',
+      'D5 - A4 - D5 - F5 - E5 - D5 - A4 - - -',
+      'G5 - - - F5 - - - Eb5 - - - D5 - - -',
+      'D5 - - - F5 - - - D5 - C5 - Bb4 - - -',
+      'C5 - - - - - G4 - C5 - D5 - E5 - - -',
+      'D5 - - - - - Bb4 - A4 - - - G4 - - -',
+      'A4 - - - C#5 - - - E5 - - - . . . .',
     ],
-    voice: { wave: 'pulse25', volume: 0.5 },
+    // Soft, flute-like lead: triangle body, a little breath and a scoop into each note.
+    voice: {
+      wave: 'triangle',
+      volume: 0.5,
+      attack: 0.03,
+      vibrato: { rate: 5, depth: 18 },
+      bendIn: 0.7,
+      breath: 0.05,
+    },
   },
-  layers: [],
-  bass: [
-    'E2 . E2 . E3 . E2 . E2 . E2 . E3 . E2 .',
-    'C2 . C2 . C3 . C2 . C2 . C2 . C3 . C2 .',
-    'D2 . D2 . D3 . D2 . D2 . D2 . D3 . D2 .',
-    'B1 . B1 . B2 . B1 . B1 . B1 . B2 . B1 .',
-    'E2 . E2 . E3 . E2 . E2 . E2 . E3 . E2 .',
-    'C2 . C2 . C3 . C2 . C2 . C2 . C3 . C2 .',
-    'D2 . D2 . D3 . D2 . D2 . D2 . D3 . D2 .',
-    'B1 . B1 . B2 . B1 . B1 . B1 . B2 . B1 .',
+  layers: [
+    {
+      line: [...BATTLE_FORM, ...BATTLE_FORM].map((chord) => SHAMISEN[chord]),
+      // Shamisen on a chip pulse: snappy pluck with a tiny pitch bite.
+      voice: { wave: 'pulse25', volume: 0.22, attack: 0.002, pluck: 0.22, bendIn: 0.3 },
+    },
   ],
-  chords: [
-    ['E4', 'G4', 'B4'],
-    ['C4', 'E4', 'G4'],
-    ['D4', 'F#4', 'A4'],
-    ['B3', 'D#4', 'F#4'],
-    ['E4', 'G4', 'B4'],
-    ['C4', 'E4', 'G4'],
-    ['D4', 'F#4', 'A4'],
-    ['B3', 'D#4', 'F#4'],
+  bass: [...BATTLE_FORM, ...BATTLE_FORM].map((chord) => PULSE[chord]),
+  chords: [DM, EBMAJ7, DM, EBMAJ7, BB, C, GM, A7, DM, EBMAJ7, DM, EBMAJ7, BB, C, GM, A7],
+  keys: {
+    style: 'stabs',
+    rhythm: ['x - - - - - - - x - - - - - - .'],
+    voice: { wave: 'triangle', volume: 0.08, attack: 0.04 },
+  },
+  // Taiko-driven boom-bap with a big fill closing every eight bars.
+  drums: [
+    't . h . s . h . k . k . s . h h',
+    'k . h k s . h . k . k . s . h h',
+    't . h . s . h . k . k . s . t t',
+    'k . h k s . h . k . k . s . h h',
+    't . h . s . h . k . k . s . h h',
+    'k . h k s . h . k . k . s . h h',
+    'k . h k s . h . k k . k s . h .',
+    't . t . s . t . t t s . t t t t',
   ],
-  keys: { style: 'arp' },
-  drums: ['k h h h s h k h k h k h s h h h', 'k h h h s h k h k h k h s h s s'],
-  kit: 'chip',
+  kit: 'dusty',
+  lowpass: 4500,
+  gain: 0.6,
 }
 
-/** The King's theme: the battle song, faster and a step higher. */
-const boss: Song = { ...battle, bpm: 166, transpose: 2 }
+/** The King's theme: the battle song a half-step higher and a touch faster. */
+const boss: Song = { ...battle, bpm: 120, transpose: 1 }
 
 export const SONGS: Record<SongId, Song> = { street, battle, boss }
 
@@ -398,6 +452,19 @@ class Sequencer {
     this.step = 0
     this.nextTime = ctx.currentTime + 0.1
     this.timer = window.setInterval(() => this.schedule(), 25)
+  }
+
+  /** Starts the requested song over on a fresh audio context (after iOS recovery). */
+  restart(): void {
+    if (this.timer !== null) window.clearInterval(this.timer)
+    this.timer = null
+    // The old nodes belonged to the discarded context; just drop them.
+    this.out = null
+    this.melodic = null
+    this.drumBus = null
+    this.stopHiss = null
+    this.current = null
+    this.play(this.requested)
   }
 
   stop(): void {
@@ -680,3 +747,4 @@ class Sequencer {
 }
 
 export const music = new Sequencer()
+synth.onRebuild(() => music.restart())

@@ -51,6 +51,9 @@ class Synth {
   musicOn = true
   sfxOn = true
   private readyListeners: (() => void)[] = []
+  private rebuildListeners: (() => void)[] = []
+  private listening = false
+  private rebuildCheck: number | null = null
 
   /** Runs `fn` once audio is unlocked (immediately if it already is). */
   onReady(fn: () => void): void {
@@ -58,32 +61,74 @@ class Synth {
     else this.readyListeners.push(fn)
   }
 
-  /** Creates/resumes the audio context. Call from a user gesture. */
+  /** Runs `fn` whenever the audio context is replaced (iOS recovery), so music can restart. */
+  onRebuild(fn: () => void): void {
+    this.rebuildListeners.push(fn)
+  }
+
+  /** Creates or revives audio. Call from a user gesture (tap, click, key press). */
   unlock(): void {
     if (!this.ctx) {
-      const Ctx =
-        window.AudioContext ??
-        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
-      if (!Ctx) return
-      this.ctx = new Ctx()
-      this.music = this.ctx.createGain()
-      this.sfx = this.ctx.createGain()
-      this.music.connect(this.ctx.destination)
-      this.sfx.connect(this.ctx.destination)
-      this.applyVolumes()
-      // Pause everything while the tab is hidden.
+      this.createContext()
+      for (const fn of this.readyListeners.splice(0)) fn()
+      return
+    }
+    if (document.hidden || this.ctx.state === 'running') return
+
+    // iOS can leave the context stuck "interrupted" after an app switch, ignoring
+    // resume(). A fresh context created inside a gesture always plays.
+    if ((this.ctx.state as string) === 'interrupted') {
+      this.rebuild()
+      return
+    }
+    this.resume()
+    // If this tap didn't revive it, rebuild shortly after (still within the gesture window).
+    if (this.rebuildCheck === null) {
+      this.rebuildCheck = window.setTimeout(() => {
+        this.rebuildCheck = null
+        if (this.ctx && this.ctx.state !== 'running' && !document.hidden) this.rebuild()
+      }, 500)
+    }
+  }
+
+  private createContext(): void {
+    const Ctx =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+    if (!Ctx) return
+    this.ctx = new Ctx()
+    this.music = this.ctx.createGain()
+    this.sfx = this.ctx.createGain()
+    this.music.connect(this.ctx.destination)
+    this.sfx.connect(this.ctx.destination)
+    this.applyVolumes()
+    this.resume()
+
+    if (!this.listening) {
+      this.listening = true
       // Pause while the page is hidden (other tab, other app, screen locked) and
       // pick back up on return. If the browser refuses to resume without a tap
-      // (common on mobile), the next tap resumes it via unlock().
+      // (common on mobile), the next tap revives it via unlock().
       const sync = () => {
         if (document.hidden) void this.ctx?.suspend()
         else this.resume()
       }
       document.addEventListener('visibilitychange', sync)
       window.addEventListener('pageshow', sync)
-      for (const fn of this.readyListeners.splice(0)) fn()
+      window.addEventListener('focus', sync)
     }
-    this.resume()
+  }
+
+  /** Throws away a stuck context and starts a fresh one (cached waves/noise belong to the old one). */
+  private rebuild(): void {
+    this.ctx?.close().catch(() => {})
+    this.ctx = null
+    this.music = null
+    this.sfx = null
+    this.waves.clear()
+    this.noiseBuffer = null
+    this.createContext()
+    for (const fn of this.rebuildListeners) fn()
   }
 
   /**

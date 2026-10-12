@@ -5,6 +5,8 @@ import { TitleScreen } from './ui/screens/TitleScreen'
 import { loadSettings, type Settings, writeSettings } from './ui/storage'
 import { useGame } from './ui/useGame'
 
+const GESTURES = ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'] as const
+
 export default function App() {
   const controller = useGame()
   const [settings, setSettings] = useState(loadSettings)
@@ -16,14 +18,13 @@ export default function App() {
 
   useEffect(() => synth.configure(settings.music, settings.sfx), [settings.music, settings.sfx])
 
-  // Browsers only allow audio after a user gesture: unlock on the first tap or key.
+  // Browsers only allow audio after a user gesture. iOS only counts a touch once the
+  // finger lifts (touchend/click), not pointerdown, so listen for all of them.
   useEffect(() => {
     const unlock = () => synth.unlock()
-    window.addEventListener('pointerdown', unlock)
-    window.addEventListener('keydown', unlock)
+    for (const event of GESTURES) window.addEventListener(event, unlock)
     return () => {
-      window.removeEventListener('pointerdown', unlock)
-      window.removeEventListener('keydown', unlock)
+      for (const event of GESTURES) window.removeEventListener(event, unlock)
     }
   }, [])
 
