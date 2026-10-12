@@ -21,7 +21,7 @@ export default function App() {
   // Browsers only allow audio after a user gesture. iOS only counts a touch once the
   // finger lifts (touchend/click), not pointerdown, so listen for all of them.
   useEffect(() => {
-    const unlock = () => synth.unlock()
+    const unlock = (event: Event) => synth.unlock(event)
     for (const event of GESTURES) window.addEventListener(event, unlock)
     return () => {
       for (const event of GESTURES) window.removeEventListener(event, unlock)

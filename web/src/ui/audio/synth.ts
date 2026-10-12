@@ -42,7 +42,23 @@ export interface NoiseOptions {
 const MUSIC_VOLUME = 0.16
 const SFX_VOLUME = 0.32
 
-class Synth {
+/**
+ * Events that count as a user gesture for starting audio in every browser. iOS ignores
+ * pointerdown/pointerup, and a context created or resumed there (or in a timer) stays silent.
+ */
+const ACTIVATION_EVENTS: ReadonlySet<string> = new Set(['touchend', 'click', 'keydown', 'mouseup'])
+/** How often the watchdog checks that the audio clock is really moving. */
+const WATCH_MS = 250
+/** Seconds audio may claim to be playing (or wait on a resume) before we call it stuck. */
+const STUCK_AFTER = 0.5
+/** Automatic suspend/resume kicks to try before waiting for a tap to rebuild. */
+const MAX_KICKS = 2
+/** Never rebuild more often than this, so a device with no audio output can't loop. */
+const REBUILD_COOLDOWN = 2
+
+const now = () => performance.now() / 1000
+
+export class Synth {
   ctx: AudioContext | null = null
   music: GainNode | null = null
   sfx: GainNode | null = null
@@ -53,7 +69,14 @@ class Synth {
   private readyListeners: (() => void)[] = []
   private rebuildListeners: (() => void)[] = []
   private listening = false
-  private rebuildCheck: number | null = null
+  /** Last watchdog reading of wall time vs. the audio clock. */
+  private lastSample: { wall: number; audio: number } | null = null
+  /** Seconds the context has claimed to be running while its clock stood still. */
+  private frozenFor = 0
+  private kicks = 0
+  /** When resume() was last requested; still not running well after that means stuck. */
+  private resumedAt = Number.NEGATIVE_INFINITY
+  private rebuiltAt = Number.NEGATIVE_INFINITY
 
   /** Runs `fn` once audio is unlocked (immediately if it already is). */
   onReady(fn: () => void): void {
@@ -66,28 +89,75 @@ class Synth {
     this.rebuildListeners.push(fn)
   }
 
-  /** Creates or revives audio. Call from a user gesture (tap, click, key press). */
-  unlock(): void {
+  /**
+   * Creates or revives audio. Call from user input (tap, click, key press). Pass the
+   * event so recovery that needs a real gesture only happens on one.
+   */
+  unlock(event?: Event): void {
     if (!this.ctx) {
       this.createContext()
       for (const fn of this.readyListeners.splice(0)) fn()
       return
     }
-    if (document.hidden || this.ctx.state === 'running') return
+    if (document.hidden || this.playing()) return
 
-    // iOS can leave the context stuck "interrupted" after an app switch, ignoring
-    // resume(). A fresh context created inside a gesture always plays.
-    if ((this.ctx.state as string) === 'interrupted') {
+    // A fresh context created inside a gesture always plays, even when iOS has left the
+    // old one "interrupted" or "running" with a dead output after an app switch.
+    const gesture = !event || ACTIVATION_EVENTS.has(event.type)
+    if (gesture && this.stuck() && now() - this.rebuiltAt > REBUILD_COOLDOWN) {
       this.rebuild()
       return
     }
     this.resume()
-    // If this tap didn't revive it, rebuild shortly after (still within the gesture window).
-    if (this.rebuildCheck === null) {
-      this.rebuildCheck = window.setTimeout(() => {
-        this.rebuildCheck = null
-        if (this.ctx && this.ctx.state !== 'running' && !document.hidden) this.rebuild()
-      }, 500)
+  }
+
+  /** Running, and as far as the watchdog can tell, actually producing sound. */
+  private playing(): boolean {
+    return this.ctx?.state === 'running' && this.frozenFor < STUCK_AFTER
+  }
+
+  private stuck(): boolean {
+    const state = this.ctx?.state as string | undefined
+    if (state === 'interrupted') return true
+    if (state === 'running') return this.frozenFor >= STUCK_AFTER
+    // Suspended: an earlier resume() should have gone through by now.
+    return now() - this.resumedAt > STUCK_AFTER
+  }
+
+  /**
+   * Checks that the audio clock advances while the context says it's running. After an
+   * app switch, iOS can report "running" while the output is dead and the clock frozen,
+   * which is silent and ignores resume(). Suspending and resuming restarts the output
+   * (the same thing switching tabs away and back does); if that fails, the next tap
+   * rebuilds the context.
+   */
+  private watch(): void {
+    const { ctx } = this
+    if (!ctx || document.hidden || ctx.state !== 'running') {
+      this.lastSample = null
+      this.frozenFor = 0
+      return
+    }
+    const sample = { wall: now(), audio: ctx.currentTime }
+    const last = this.lastSample
+    this.lastSample = sample
+    if (!last) return
+    const elapsed = sample.wall - last.wall
+    // A late timer (busy or throttled page) says nothing about the audio clock.
+    if (elapsed > 1) return
+    if (sample.audio - last.audio > elapsed / 2) {
+      this.frozenFor = 0
+      this.kicks = 0
+      return
+    }
+    this.frozenFor += elapsed
+    if (this.frozenFor >= STUCK_AFTER && this.kicks < MAX_KICKS) {
+      this.kicks += 1
+      this.frozenFor = 0
+      void ctx.suspend().then(
+        () => ctx === this.ctx && this.resume(),
+        () => {},
+      )
     }
   }
 
@@ -108,14 +178,19 @@ class Synth {
       this.listening = true
       // Pause while the page is hidden (other tab, other app, screen locked) and
       // pick back up on return. If the browser refuses to resume without a tap
-      // (common on mobile), the next tap revives it via unlock().
+      // (common on mobile), the watchdog and the next tap take it from there.
       const sync = () => {
-        if (document.hidden) void this.ctx?.suspend()
-        else this.resume()
+        if (document.hidden) {
+          void this.ctx?.suspend().catch(() => {})
+        } else {
+          this.kicks = 0
+          this.resume()
+        }
       }
       document.addEventListener('visibilitychange', sync)
       window.addEventListener('pageshow', sync)
       window.addEventListener('focus', sync)
+      window.setInterval(() => this.watch(), WATCH_MS)
     }
   }
 
@@ -127,6 +202,10 @@ class Synth {
     this.sfx = null
     this.waves.clear()
     this.noiseBuffer = null
+    this.lastSample = null
+    this.frozenFor = 0
+    this.kicks = 0
+    this.rebuiltAt = now()
     this.createContext()
     for (const fn of this.rebuildListeners) fn()
   }
@@ -138,6 +217,7 @@ class Synth {
    */
   private resume(): void {
     if (!this.ctx || document.hidden || this.ctx.state === 'running') return
+    this.resumedAt = now()
     this.ctx.resume().catch(() => {
       // Needs a user gesture; the next tap calls unlock() and retries.
     })

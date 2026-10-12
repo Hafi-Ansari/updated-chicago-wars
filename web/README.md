@@ -85,7 +85,10 @@ taiko fills, wind chimes and vinyl crackle, all on chip voices. "Shamisen Showdo
 mid-tempo and low-pitched, driven by a plucked shamisen riff and taiko, with a slightly higher,
 faster version for the boss. Songs are
 written as text, one 16th note per token, in `music.ts`. Browsers only allow audio after a tap
-or key press, so audio unlocks on the first interaction.
+or key press, so audio unlocks on the first interaction. Phones can leave audio silent after
+an app switch while claiming it's still playing, so a watchdog checks that the audio clock is
+really moving. If it isn't, it restarts the output, and failing that the next tap rebuilds
+the audio context (`test/audio.test.ts` covers these cases).
 
 ## Deploying
 
