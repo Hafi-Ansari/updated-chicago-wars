@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 "Chicago Wars": two versions of the same game live here.
 
-- **`web/`**: the current version, a browser RPG rebuilt from scratch in Vite + React 19 + TypeScript (strict). A static SPA with no backend; saves live in `localStorage`. **This is where active work happens.** `web/README.md` covers gameplay systems, sprites (LPC generator), synthesized audio and deploying.
+- **`web/`**: the current version, a browser RPG rebuilt from scratch in Vite + React 19 + TypeScript (strict). A static SPA plus one Vercel function (`api/judge-bar.ts`, the Battle Rap judge); saves live in `localStorage`. **This is where active work happens.** `web/README.md` covers gameplay systems, sprites (LPC generator), synthesized audio and deploying.
 - **Repo root `*.java`**: the original 2020 text-based console RPG (AP CS project), kept for reference. See [Java version](#java-version-reference) at the end.
 
 ## Web: commands
@@ -21,6 +21,8 @@ npm run lint         # Biome lint + format check; `npm run format` auto-fixes
 npm run typecheck    # tsc -b (app, node and test projects)
 npm run build        # typecheck + production build into dist/
 npm run sprites      # rebuild public/sprites/*.png from the LPC generator (needs network)
+npm run eval:judge   # live Battle Rap judge evaluation (calls Jev; needs TYPESAFE_API_KEY)
+npm run export:bars  # pull logged Battle Rap bars from Upstash into eval/candidates/
 ```
 
 Single test file or test name: `npx vitest run test/step.test.ts`, `npx vitest run -t "is deterministic"`. After changes, run `npm test` and `npm run lint`.
@@ -49,7 +51,11 @@ Ids are string unions in `src/engine/types.ts`, and content is typed `Record<Id,
 - **New `GameEvent`**: handle it in `narration.ts`, plus `useGame.ts`, `Stage.tsx` and `useGameAudio.ts` if it changes HP or clout or needs animation or sound.
 - **New gear**: give it a `category` and a place in `SKILL_ORDER` (`src/content/skills.ts`); `test/content.test.ts` checks both. Add it to the bot's `SHOP_PRIORITY`/`GEAR_PRIORITY` in `test/sim.ts` if a sensible player would buy it, or the balance test won't see it.
 
+- **Battle Rap judging (server)**: `api/judge-bar.ts` is the only Vercel function; its code lives in `server/` (`rhyme.ts` scores rhymes on the CMU dictionary, `jev.ts` asks Jev via `@typesafe-ai/sdk`, `judgeBar.ts` is the pipeline, `barLog.ts` logs to Upstash). The UI calls it from `src/ui/judge.ts`, and the result reaches the engine inside the `spit` action, so the engine stays pure. `npm run dev` serves `api/` through a plugin in `vite.config.ts` (keys from `.env.local`). The design is summarized in `web/README.md` → Battle Rap judging.
+
 ## Web: gotchas
+
+- **Server imports**: Vercel runs `api/` as plain Node ESM, so every relative import reachable from `api/judge-bar.ts` needs a `.js` extension (`'./rhyme.js'`), and the game modules it shares (`src/content/cyphers.ts`, `src/engine/balance.ts`, `src/engine/bars.ts`) must have no runtime imports of their own (type-only imports are fine). Vite and the tests don't care, so a mistake would only break in production; `test/server-imports.test.ts` walks the import graph to catch it.
 
 - **Save format**: the game autosaves `GameState` to `localStorage`, and runs in progress on the deployed site should survive updates. When `GameState` changes shape, bump `GameState.version` (`types.ts`) and `SAVE_VERSION`, and add a migration step to `migrateSave` in `src/engine/save.ts` that fills in the new fields (including inside a saved `battle` or `npc`). `loadSave` in `src/ui/storage.ts` runs every save through it; `test/step.test.ts` has migration tests.
 - **Content tests** (`test/content.test.ts`): every spoken line of a character who raps (everyone except Goons, i.e. `rhymes: true`) must be a two-line bar with `\n` between the lines. The hero's battle lines and every move's `lines` must be bars too. Pools have minimum sizes.

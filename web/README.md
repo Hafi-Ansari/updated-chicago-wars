@@ -18,6 +18,8 @@ npm run lint       # Biome lint + format check  (npm run format to fix)
 npm run typecheck
 npm run build      # type-check + production build into dist/
 npm run sprites    # rebuild character sprites from the LPC generator (needs network)
+npm run eval:judge # live Battle Rap judge evaluation (needs TYPESAFE_API_KEY)
+npm run export:bars # pull logged Battle Rap bars from Upstash into eval/candidates/
 ```
 
 ## How it fits together
@@ -60,6 +62,13 @@ src/ui/        React: plays events back (typewriter, animations), dispatches act
 - **Late-game rally**: from block 8, the first time an enemy drops below 30% HP it heals 25%
   for free, on top of its turn: cough syrup, shea butter, or remembering the Bulls' '90s run
   (`RALLY` in `balance.ts`, lines in `src/content/enemies.ts`).
+- **Battle Rap**: once the enemy drops below half HP, a gold option unlocks under the battle
+  menu (once per fight; it stays unlocked after a heal). The enemy spits a bar and the hero has
+  30 seconds to type a comeback, or to pick one of three on phones. The bar is scored into a tier
+  (flop, decent, fire, legendary) whose effects can't be dodged; a flop gets the hero booed
+  (shook) and the enemy still acts. Prompts and pick-mode answers are in
+  `src/content/cyphers.ts`, scoring in `src/engine/combat/cypher.ts`, tuning in `CYPHER` and
+  `CYPHER_EFFECTS` (`balance.ts`). See [Battle Rap judging](#battle-rap-judging).
 - **Vendors** (Plug, Gangsta, hot dog cart) aren't random encounters. They're recurring
   characters you can visit once per block from the explore menu. Walking only leads to fights
   and street events.
@@ -82,6 +91,44 @@ src/ui/        React: plays events back (typewriter, animations), dispatches act
 - **Playback**: `src/ui/useGame.ts` runs `step` right away but plays the resulting events one at
   a time. HP bars and clout count up event by event, and the battle stays on screen until its
   final blows have played.
+
+## Battle Rap judging
+
+Typed bars are judged by one Vercel function, `api/judge-bar.ts`, so no API key reaches the
+browser. Shared server code lives in `server/`.
+
+1. **Rhyme, in code** (`server/rhyme.ts`): the last word of the player's bar against the enemy's,
+   by their pronunciations in the CMU Pronouncing Dictionary. Perfect, slant and multi-syllable
+   rhymes score higher; repeating the enemy's word doesn't count. Slang the dictionary doesn't
+   know comes from `server/slang.ts`, then from spelling.
+2. **Everything else, by [Jev](https://docs.typesafe.ai)** (`server/jev.ts`): one request with
+   typed questions for wit, relevance, flow, rhymes-by-ear, injection and gibberish. Jev answers
+   with probabilities, not text. If Jev fails (no key, rate limit, timeout), the bar is scored on
+   its rhyme with a neutral quality, which tops out at decent.
+3. **Logging** (`server/barLog.ts`): every bar, its rhyme and Jev's answers go to Upstash Redis
+   after the response is sent, keeping the latest 100,000. No IP addresses are stored.
+
+The enemy's bar is looked up from game content on the server, never taken from the request. If
+the judge can't be reached, the game switches to pick mode, so the network never costs a turn.
+
+**Local dev**: `npm run dev` serves `api/` too (a Vite plugin in `vite.config.ts`). Put
+`TYPESAFE_API_KEY=...` in `.env.local` (gitignored) to judge with Jev; without it bars are
+scored on rhyme alone.
+
+**Evaluating the judge**: `eval/battle-bars.json` holds 40 labeled bars (great, mediocre,
+off-topic, gibberish, injection attempts). `npm run eval:judge` runs them through Jev three times,
+prints agreement, injection and gibberish handling, latency and cost, writes
+`eval/results/<time>.json`, and fails if Jev misses the bar to ship. Run it before changing
+the questions or thresholds. `npm run export:bars` pulls logged bars to label and add.
+
+**Setting it up on Vercel** (once):
+
+- Project → Settings → Environment Variables: `TYPESAFE_API_KEY` (from
+  [console.typesafe.ai](https://console.typesafe.ai/keys)). Never prefix it with `VITE_`.
+- Storage → add **Upstash Redis** from the Marketplace and connect it to the project; it sets
+  the connection variables. Without it, bars just aren't logged.
+- Firewall → a rate-limit rule for `/api/judge-bar` (e.g. 20 requests per 60 s per IP).
+  Hobby allows one.
 
 ## Art
 
@@ -118,7 +165,8 @@ the audio context (`test/audio.test.ts` covers these cases).
 
 ## Deploying
 
-The output is plain static files, so any static host works.
+The game is static files plus one function (`api/judge-bar.ts`, Battle Rap's judge). On a
+static-only host everything works, but Battle Rap falls back to pick mode.
 
 - **Vercel**: import the repo, set **Root Directory** to `web`. The Vite preset is detected
   automatically (build `npm run build`, output `dist`).

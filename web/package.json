@@ -13,7 +13,9 @@
     "format": "biome check --write .",
     "typecheck": "tsc -b",
     "sim": "vitest run balance --silent=false",
-    "sprites": "node scripts/build-sprites.mjs"
+    "sprites": "node scripts/build-sprites.mjs",
+    "eval:judge": "vitest run --config vitest.eval.config.ts",
+    "export:bars": "node --env-file-if-exists=.env.local scripts/export-bars.ts"
   },
   "dependencies": {
     "@fontsource/pixelify-sans": "^5.3.0",

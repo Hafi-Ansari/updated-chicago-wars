@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { TypeSafeClient } from '@typesafe-ai/sdk'
 import { describe, expect, it } from 'vitest'
 import { GET, POST } from '../api/judge-bar'
@@ -10,6 +12,7 @@ import {
   verdictFrom,
 } from '../server/jev'
 import { judgeBar, parseJudgeRequest } from '../server/judgeBar'
+import { rhymeScore } from '../server/rhyme'
 import { CYPHERS } from '../src/content/cyphers'
 import { CYPHER } from '../src/engine/balance'
 
@@ -318,5 +321,52 @@ describe('logBar', () => {
       },
     } as unknown as Parameters<typeof logBar>[1]
     await expect(logBar(log, broken)).resolves.toBeUndefined()
+  })
+})
+
+describe('the judge evaluation set (eval/battle-bars.json)', () => {
+  interface EvalItem {
+    id: string
+    enemyKind: string
+    promptId: number
+    playerBar: string
+    category: string
+  }
+  const items = (
+    JSON.parse(readFileSync(join(__dirname, '..', 'eval', 'battle-bars.json'), 'utf8')) as {
+      items: EvalItem[]
+    }
+  ).items
+
+  it('has 40 bars in the planned mix, all valid requests', () => {
+    const count = (c: string) => items.filter((i) => i.category === c).length
+    expect(items).toHaveLength(40)
+    expect([
+      count('great'),
+      count('mediocre'),
+      count('off-topic'),
+      count('gibberish'),
+      count('injection'),
+    ]).toEqual([10, 10, 6, 6, 8])
+    for (const item of items) expect(parseJudgeRequest(item), item.id).toBeTypeOf('object')
+  })
+
+  it('rhymes where the labels assume it does', () => {
+    const rhymesWith = (item: EvalItem) =>
+      rhymeScore(
+        CYPHERS[item.enemyKind as keyof typeof CYPHERS][item.promptId]?.bar ?? '',
+        item.playerBar,
+      ).score
+    for (const item of items) {
+      if (item.category === 'great' || item.category === 'off-topic') {
+        expect(rhymesWith(item), item.id).toBeGreaterThanOrEqual(0.6)
+      }
+    }
+    // The clever-but-unrhymed mediocre bar, and the gibberish that rhymes on purpose
+    // (Jev, not the rhyme scorer, has to catch it).
+    expect(rhymesWith(items.find((i) => i.id === 'mediocre-10') as EvalItem)).toBeLessThan(0.6)
+    for (const id of ['gibberish-03', 'gibberish-04']) {
+      expect(rhymesWith(items.find((i) => i.id === id) as EvalItem), id).toBeGreaterThanOrEqual(0.6)
+    }
   })
 })
