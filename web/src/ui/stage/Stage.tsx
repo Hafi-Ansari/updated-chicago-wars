@@ -73,7 +73,7 @@ function animationsFor(
     case 'appear':
       return { enemy: 'anim-enter' }
     case 'fled':
-      return { hero: 'anim-flee' }
+      return { [e.target]: e.target === 'hero' ? 'anim-flee' : 'anim-flee-foe' }
     case 'locked':
       return { hero: 'anim-locked', enemy: 'anim-lunge' }
     default:
@@ -123,17 +123,22 @@ export function Stage({ state, current, display, foeHidden }: StageProps) {
   const foe = foeHidden ? null : foeOf(state)
   const anim = animationsFor(current)
 
-  // A fainted foe stays down until a different foe shows up; a fainted hero
-  // stays down for the rest of the run (the screen remounts for a new run).
+  // A fainted foe stays down (and one that ran stays gone) until a different foe
+  // shows up; a fainted hero stays down for the rest of the run (the screen
+  // remounts for a new run).
   const foeKey = foe ? `${foe.sprite}:${foe.name}` : 'none'
   const [faintedFoe, setFaintedFoe] = useState<string | null>(null)
+  const [goneFoe, setGoneFoe] = useState<string | null>(null)
   const [heroDown, setHeroDown] = useState(false)
   useEffect(() => {
-    if (current?.event.type !== 'faint') return
-    if (current.event.target === 'hero') setHeroDown(true)
+    const e = current?.event
+    if (e?.type === 'fled' && e.target === 'enemy') setGoneFoe(foeKey)
+    if (e?.type !== 'faint') return
+    if (e.target === 'hero') setHeroDown(true)
     else setFaintedFoe(foeKey)
   }, [current, foeKey])
   const fainted: Record<Side, boolean> = { hero: heroDown, enemy: faintedFoe === foeKey }
+  const foeGone = goneFoe === foeKey && anim.enemy === undefined
 
   const location = current?.event.type === 'location' ? current.event : null
   const battle = state.phase.kind === 'battle' ? state.phase.battle : null
@@ -155,7 +160,10 @@ export function Stage({ state, current, display, foeHidden }: StageProps) {
         {foe && (
           <>
             <div className="platform platform--foe" />
-            <div className="actor actor--foe" key={`${foeKey}-${anim.enemy ? effectKey : ''}`}>
+            <div
+              className={`actor actor--foe ${foeGone ? 'actor--gone' : ''}`}
+              key={`${foeKey}-${anim.enemy ? effectKey : ''}`}
+            >
               <div className={anim.enemy ?? ''}>
                 <Sprite id={foe.sprite} facing="front" scale={2} fainting={fainted.enemy} />
               </div>

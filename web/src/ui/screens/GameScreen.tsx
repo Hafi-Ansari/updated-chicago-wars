@@ -22,7 +22,7 @@ interface GameScreenProps {
 const VISUAL_EVENT_MS: Partial<Record<GameEvent['type'], number>> = {
   appear: 650,
   faint: 1100,
-  fled: 600,
+  fled: 700,
 }
 
 const HISTORY_LINES = 2

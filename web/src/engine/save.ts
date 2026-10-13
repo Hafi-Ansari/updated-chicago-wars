@@ -20,12 +20,13 @@ export function migrateSave(save: unknown): GameState | null {
 
 /**
  * v2 → v3: the Gangsta's random lesson and stat offer became a free playbook and fixed
- * training, and battles track enemy locks and per-fight move limits.
+ * training, battles track enemy locks and per-fight move limits, and enemies can run.
  */
 function fromV2(state: Record<string, unknown>): void {
   const hero = state.hero as { moves: { id: MoveId }[] }
   state.seenMoves = hero.moves.map((m) => m.id)
   delete state.movesTaught
+  ;(state.stats as Record<string, unknown>).enemiesFled = 0
 
   const phase = state.phase as Record<string, unknown>
   const npc = phase.npc as Record<string, unknown> | undefined
@@ -39,6 +40,7 @@ function fromV2(state: Record<string, unknown>): void {
     battle.lockedMoves = []
     battle.lockedGear = []
     battle.enemyMoveUses = []
+    battle.enemyFled = false
   }
   if (phase.kind === 'learnMove') {
     // A paid lesson in progress: the move is free now.

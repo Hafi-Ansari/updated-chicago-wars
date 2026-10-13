@@ -32,6 +32,9 @@ export function EndScreen({ state, onDone }: EndScreenProps) {
     ['Times you dipped', stats.timesFled],
     ['Hot dogs demolished', stats.hotDogsEaten],
   ]
+  if (stats.enemiesFled > 0) {
+    rows.splice(2, 0, ['Opps who ran off', stats.enemiesFled])
+  }
   if (stats.ketchupIncidents > 0) {
     rows.push(['Hot dog stands banned from', stats.ketchupIncidents])
   }

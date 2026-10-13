@@ -95,6 +95,35 @@ describe('step', () => {
     expect(after.hero.moves.every((m) => m.pp === null || m.pp > 0)).toBe(true)
   })
 
+  it('an enemy running off pays out exactly like a win', () => {
+    const start = firstBattle()
+    if (start.phase.kind !== 'battle') throw new Error('expected battle')
+    const enemy = {
+      ...start.phase.battle.enemy,
+      kind: 'goon' as const,
+      stats: { ...start.phase.battle.enemy.stats, maxHp: 100, atk: 1 },
+      hp: 15,
+    }
+    let state: GameState = {
+      ...start,
+      hero: { ...start.hero, stats: { ...start.hero.stats, atk: 1, def: 999 } },
+      phase: { kind: 'battle', battle: { ...start.phase.battle, enemy } },
+    }
+    const events = []
+    for (let i = 0; i < 20 && state.phase.kind === 'battle'; i++) {
+      const action =
+        state.phase.battle.opening !== null ? ({ type: 'strike', target: 'brace' } as const) : jab
+      const result = step(state, action)
+      events.push(...result.events)
+      state = result.state
+    }
+    expect(state.phase.kind).not.toBe('battle')
+    expect(events).toContainEqual({ type: 'fled', target: 'enemy' })
+    expect(events.some((e) => e.type === 'faint')).toBe(false)
+    expect(state.stats).toMatchObject({ enemiesDefeated: 1, enemiesFled: 1 })
+    expect(state.hero.clout).toBe(start.hero.clout + enemy.cloutReward)
+  })
+
   it('win offers show moves the hero has never seen first, and remember them', () => {
     const before = firstBattle()
     const seen = ['jab', 'talkTrash', 'twoPiece', 'haymaker', 'bobAndWeave'] as const

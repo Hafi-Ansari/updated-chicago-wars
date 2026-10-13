@@ -49,6 +49,19 @@ const goon: EnemyDef = {
     'I should have stayed in Naperville.',
   ],
   basicAttackWeight: 3,
+  flee: {
+    chance: 0.5,
+    lines: [
+      'Okay, I just remembered I left the stove on. In Naperville. BYE!',
+      "This isn't running away! It's a tactical jog! Totally different!",
+      "My mom's calling! ...She's not calling. But I'm leaving like she is!",
+      "Tell everybody I won! I'm going home! Only one of those is true!",
+      "I'm gonna go learn some bars and come back scarier. Don't wait up!",
+      "I'm not crying, the Hawk is just really windy today! Bye forever!",
+      "You'll never catch me! ...Please don't try to catch me.",
+      'Is that a cop? No? Well, I respect the law enough to leave anyway!',
+    ],
+  },
   moves: [
     {
       weight: 1,
@@ -100,6 +113,17 @@ const thug: EnemyDef = {
     "I slipped! It was the ice! It's October, I know!\nBut the Hawk was blowing, so I had to go.",
   ],
   basicAttackWeight: 3,
+  flee: {
+    chance: 0.35,
+    lines: [
+      "Hold up, hold up, my phone just rang,\nit's my grandma, she needs me, I gotta hang!",
+      "This ain't running, homie, this is cardio day,\nwe'll finish this fight some other way!",
+      "Smoke bomb! ...Okay, it's a bag of flour,\nbut I'll be three blocks gone inside the hour!",
+      "Nah, I got a dentist appointment at four,\nI'm out the window, I ain't using the door!",
+      "Tell the block I was brave, tell 'em I stood tall,\nI'm going home to hide in my mama's hall!",
+      "My parking meter's out, I can hear the ticket man sing,\nyou win this one, chief, I'm doing my thing!",
+    ],
+  },
   moves: [
     {
       weight: 1,
@@ -153,6 +177,16 @@ const biker: EnemyDef = {
     "I'm hanging up the leather, I'm selling the bike,\nI'm taking up knitting, it's what I really like.",
   ],
   basicAttackWeight: 3,
+  flee: {
+    chance: 0.25,
+    lines: [
+      "Delilah's calling, she needs an oil change,\nI'll be back... someday... when it's less strange!",
+      "VRRRM VRRRM, that's the sound of retreat,\nI'm out like a Bears fan in November sleet!",
+      "I'm not running, I'm riding, there's a difference, see,\nthe difference is the engine. Don't follow me!",
+      "Two wheels, one rule: know when to quit,\nand buddy, I'm quitting, I'm done with it!",
+      "Kickstand up, I'm gone in a flash,\nkeep the clout, I'm keeping my mustache!",
+    ],
+  },
   moves: [
     {
       weight: 1,

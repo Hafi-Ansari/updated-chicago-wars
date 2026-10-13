@@ -346,6 +346,45 @@ describe('enemy disruption', () => {
   })
 })
 
+describe('enemies running', () => {
+  const lowGoon = (hp: number, seed: number) => {
+    const enemy = makeEnemy({ maxHp: 100, atk: 1 }, { kind: 'goon' })
+    enemy.hp = hp
+    return makeCombat(makeHero({ atk: 1, def: 999, maxHp: 9999 }), enemy, seed)
+  }
+
+  it('early enemies sometimes run once below 20% HP, which ends the fight as a win', () => {
+    let ran = 0
+    for (let seed = 1; seed <= 60; seed++) {
+      const ctx = lowGoon(19, seed)
+      const result = fightRound(ctx, jab)
+      if (result !== 'enemyFled') continue
+      ran++
+      expect(ctx.events).toContainEqual({ type: 'fled', target: 'enemy' })
+      const line = ctx.events.find((e) => e.type === 'say' && e.side === 'enemy')
+      expect(ENEMIES.goon.flee?.lines).toContain(line?.type === 'say' ? line.text : '')
+      // Running is their whole turn: no attack follows.
+      expect(ctx.events.some((e) => e.type === 'hit' && e.attacker === 'enemy')).toBe(false)
+    }
+    expect(ran).toBeGreaterThan(15)
+    expect(ran).toBeLessThan(50)
+  })
+
+  it("never run while healthy, while stunned, or if they aren't the running type", () => {
+    for (let seed = 1; seed <= 40; seed++) {
+      expect(fightRound(lowGoon(25, seed), jab)).toBe('ongoing')
+
+      const stunned = lowGoon(10, seed)
+      stunned.enemy.statuses = [{ kind: 'stunned', turns: 1 }]
+      expect(fightRound(stunned, jab)).not.toBe('enemyFled')
+
+      const leader = lowGoon(10, seed)
+      leader.enemy.kind = 'gangLeader'
+      expect(fightRound(leader, jab)).not.toBe('enemyFled')
+    }
+  })
+})
+
 describe('fleeRound', () => {
   it('a much faster hero always gets away', () => {
     const ctx = makeCombat(makeHero({ spd: 100 }), makeEnemy({ spd: 0 }))

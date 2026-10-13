@@ -82,6 +82,11 @@ export interface EnemyDef {
   /** Special moves; whatever weight is left over is a basic attack. */
   moves: EnemyMove[]
   basicAttackWeight: number
+  /**
+   * Chance per turn to run off once below ENEMY_FLEE_BELOW health, and what they
+   * yell on the way out. Running counts as a win for the hero.
+   */
+  flee?: { chance: number; lines: Pool }
 }
 
 export interface HeroLines {

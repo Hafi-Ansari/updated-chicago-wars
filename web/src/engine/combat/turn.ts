@@ -13,6 +13,7 @@ import type { EnemyMove } from '../../content/types'
 import {
   BLINDED_ACCURACY_MULT,
   DAZED,
+  ENEMY_FLEE_BELOW,
   FLEE,
   MIN_DAMAGE,
   OPENING_CHANCE,
@@ -28,7 +29,8 @@ import { lockableGear, lockableMoves } from './locks'
 import { clamp, effectiveStats, hasStatus, hpRatio, isDown } from './stats'
 import { beginTurn, endTurn } from './status'
 
-export type BattleOutcome = 'ongoing' | 'won' | 'lost' | 'fled'
+/** `fled` is the hero running; `enemyFled` is the enemy running, which counts as a win. */
+export type BattleOutcome = 'ongoing' | 'won' | 'lost' | 'fled' | 'enemyFled'
 
 export type HeroAction = { type: 'move'; move: MoveId } | { type: 'skill'; skill: SkillId }
 
@@ -49,6 +51,7 @@ function say(ctx: CombatContext, side: Side, text: string): void {
 export function outcome(ctx: CombatContext): BattleOutcome {
   if (isDown(ctx.hero)) return 'lost'
   if (isDown(ctx.enemy)) return 'won'
+  if (ctx.battle.enemyFled) return 'enemyFled'
   return 'ongoing'
 }
 
@@ -100,7 +103,7 @@ export function fleeRound(ctx: CombatContext): BattleOutcome {
 
   if (ctx.rng.chance(chance)) {
     say(ctx, 'hero', ctx.pick('hero.flee', HERO_LINES.flee))
-    ctx.emit({ type: 'fled' })
+    ctx.emit({ type: 'fled', target: 'hero' })
     return 'fled'
   }
 
@@ -199,6 +202,7 @@ function available(ctx: CombatContext, move: EnemyMove, index: number): boolean 
 
 function enemyAct(ctx: CombatContext, action: EnemyAction): void {
   const def = ENEMIES[ctx.enemy.kind]
+  if (enemyRuns(ctx)) return
   if (action !== null) {
     ctx.battle.enemyMoveUses.push(def.moves.indexOf(action))
     if (ctx.rng.chance(SAY_CHANCE.enemyTaunt)) {
@@ -215,6 +219,18 @@ function enemyAct(ctx: CombatContext, action: EnemyAction): void {
   }
   if (action === null) attack(ctx, 'enemy')
   else applyEffects(ctx, 'enemy', action.effects)
+}
+
+/** Low on health, some enemies take their chances with their feet instead. */
+function enemyRuns(ctx: CombatContext): boolean {
+  const { flee, kind } = ENEMIES[ctx.enemy.kind]
+  if (!flee || hpRatio(ctx.enemy) >= ENEMY_FLEE_BELOW || !ctx.rng.chance(flee.chance)) {
+    return false
+  }
+  say(ctx, 'enemy', ctx.pick(`${kind}.flee`, flee.lines))
+  ctx.emit({ type: 'fled', target: 'enemy' })
+  ctx.battle.enemyFled = true
+  return true
 }
 
 /** Dazed fighters sometimes stumble into their own swing. */

@@ -177,6 +177,8 @@ export interface BattleState {
   lockedGear: SkillId[]
   /** Index into the enemy's `moves` for every special move used, for per-fight limits. */
   enemyMoveUses: number[]
+  /** The enemy ran off (which counts as a win). */
+  enemyFled: boolean
 }
 
 // ── NPCs ─────────────────────────────────────────────────────────────────────
@@ -191,7 +193,9 @@ export interface NpcInstance {
 // ── Game ─────────────────────────────────────────────────────────────────────
 
 export interface RunStats {
+  /** Includes enemies who ran off, since that counts as a win. */
   enemiesDefeated: number
+  enemiesFled: number
   damageDealt: number
   damageTaken: number
   crits: number
@@ -290,4 +294,5 @@ export type GameEvent =
   | { type: 'skillLearned'; skill: SkillId }
   | { type: 'locked'; what: 'move'; move: MoveId }
   | { type: 'locked'; what: 'gear'; skill: SkillId }
-  | { type: 'fled' }
+  /** A fighter ran from the battle. */
+  | { type: 'fled'; target: Side }

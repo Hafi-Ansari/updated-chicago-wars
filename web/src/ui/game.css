@@ -531,6 +531,25 @@
   animation: flee 600ms ease-in forwards;
 }
 
+/* The foe turns tail and sprints off the right edge of the stage. */
+.anim-flee-foe {
+  animation: flee-foe 700ms ease-in forwards;
+}
+
+@keyframes flee-foe {
+  25% {
+    transform: translateX(-14px) scaleX(-1);
+  }
+  to {
+    transform: translateX(240px) scaleX(-1);
+    opacity: 0;
+  }
+}
+
+.actor--gone {
+  visibility: hidden;
+}
+
 @keyframes flee {
   to {
     transform: translateX(-260px);

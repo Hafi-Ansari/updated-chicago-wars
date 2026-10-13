@@ -13,7 +13,9 @@ const isBar = (line: string) => line.split('\n').length >= 2
 describe('rhyming content', () => {
   for (const def of Object.values(ENEMIES)) {
     it(`${def.title} ${def.rhymes ? 'raps' : 'does not rap'} in every spoken pool`, () => {
-      for (const pool of [def.intro, def.taunt, def.blockFlee, def.defeat]) {
+      const pools = [def.intro, def.taunt, def.blockFlee, def.defeat]
+      if (def.flee) pools.push(def.flee.lines)
+      for (const pool of pools) {
         expect(pool.length).toBeGreaterThan(0)
         for (const line of pool) {
           if (def.rhymes) expect(isBar(line), line).toBe(true)
@@ -66,5 +68,13 @@ describe('moves', () => {
       expect(move.accuracy).toBeLessThanOrEqual(1)
       if (move.pp !== null) expect(move.pp).toBeGreaterThan(0)
     }
+  })
+})
+
+describe('fleeing', () => {
+  it('only early-to-mid enemies run, and the ones that do have plenty to say', () => {
+    const runners = Object.values(ENEMIES).filter((d) => d.flee)
+    expect(runners.map((d) => d.kind)).toEqual(['goon', 'thug', 'biker'])
+    for (const def of runners) expect(def.flee?.lines.length).toBeGreaterThanOrEqual(5)
   })
 })

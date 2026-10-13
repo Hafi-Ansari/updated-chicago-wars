@@ -107,6 +107,7 @@ export function newGame(heroName: string, seed: number): StepResult {
     recent: {},
     stats: {
       enemiesDefeated: 0,
+      enemiesFled: 0,
       damageDealt: 0,
       damageTaken: 0,
       crits: 0,
@@ -372,6 +373,7 @@ function startBattle(state: GameState, enemy: Enemy, canFlee: boolean, ctx: Step
       lockedMoves: [],
       lockedGear: [],
       enemyMoveUses: [],
+      enemyFled: false,
     },
   }
 }
@@ -445,19 +447,30 @@ function endBattle(
       state.phase = { kind: 'explore' }
       return
 
-    case 'won': {
-      const def = ENEMIES[enemy.kind]
-      ctx.emit({
-        type: 'say',
-        speaker: enemy.name,
-        side: 'enemy',
-        text: fill(ctx.pick(`${def.kind}.defeat`, def.defeat), {
-          hero: hero.name,
-          enemy: enemy.name,
-        }),
-      })
-      ctx.emit({ type: 'faint', target: 'enemy' })
-      ctx.emit({ type: 'narrate', text: `You defeated ${enemy.name}!`, tone: 'reward' })
+    case 'won':
+    case 'enemyFled': {
+      if (result === 'won') {
+        const def = ENEMIES[enemy.kind]
+        ctx.emit({
+          type: 'say',
+          speaker: enemy.name,
+          side: 'enemy',
+          text: fill(ctx.pick(`${def.kind}.defeat`, def.defeat), {
+            hero: hero.name,
+            enemy: enemy.name,
+          }),
+        })
+        ctx.emit({ type: 'faint', target: 'enemy' })
+        ctx.emit({ type: 'narrate', text: `You defeated ${enemy.name}!`, tone: 'reward' })
+      } else {
+        // Running counts as a win: same rewards, just no knockout.
+        stats.enemiesFled += 1
+        ctx.emit({
+          type: 'narrate',
+          text: `${enemy.name} ran off! That counts as a win.`,
+          tone: 'reward',
+        })
+      }
       stats.enemiesDefeated += 1
 
       if (enemy.kind === 'boss') {

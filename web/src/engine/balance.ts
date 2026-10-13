@@ -60,6 +60,9 @@ export const DAZED = { selfHitChance: 0.35, power: 0.4 }
 
 // ── Openings ─────────────────────────────────────────────────────────────────
 
+/** Enemies with a `flee` chance may run off once their HP drops below this share. */
+export const ENEMY_FLEE_BELOW = 0.2
+
 /** Chance per round that the enemy charges recklessly and leaves an opening. */
 export const OPENING_CHANCE = 0.3
 export const OPENING_TARGETS_OFFERED = 3

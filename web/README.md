@@ -50,6 +50,8 @@ src/ui/        React: plays events back (typewriter, animations), dispatches act
   the rest of the fight (`battle.lockedMoves` / `lockedGear`; Jab can never be locked), pick
   your pocket (the clout rides on their reward, so winning gets it back), drain HP, and heal
   when low. Moves can be gated by HP (`whenBelow`) and capped per fight (`maxUses`).
+  Goons, Thugs and Bikers may run off below 20% HP with a parting line (`flee` on their
+  definition), which counts as a win: same clout, heal, level progress and move offers.
 - **Vendors** (Plug, Gangsta, hot dog cart) aren't random encounters. They're recurring
   characters you can visit once per block from the explore menu. Walking only leads to fights
   and street events.

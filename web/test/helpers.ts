@@ -37,6 +37,7 @@ export function makeEnemy(stats: Partial<Stats> = {}, extra: Partial<Enemy> = {}
 export function emptyRunStats(): RunStats {
   return {
     enemiesDefeated: 0,
+    enemiesFled: 0,
     damageDealt: 0,
     damageTaken: 0,
     crits: 0,
@@ -73,6 +74,7 @@ export function makeCombat(
       lockedMoves: [],
       lockedGear: [],
       enemyMoveUses: [],
+      enemyFled: false,
     },
   }
 }
