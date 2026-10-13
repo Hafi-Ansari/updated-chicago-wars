@@ -126,6 +126,11 @@ export function RapBattle({ battle, act, input }: RapBattleProps) {
 
   if (!cypher) return null
   const prompt = cypherPrompt(battle.enemy.kind, cypher)
+  // A bar is a setup and a punchline, one on each line; the box and the hint say so in-game.
+  const placeholder = [
+    `The setup: hit back at ${battle.enemy.name}...`,
+    `The punchline: land it on a rhyme for "${rhymeTarget(prompt.bar)}".`,
+  ].join('\n')
   const fraction = Math.max(0, Math.min(1, (deadline - now) / (RAP_SECONDS * 1000)))
 
   const onSubmit = (e: FormEvent) => {
@@ -159,7 +164,7 @@ export function RapBattle({ battle, act, input }: RapBattleProps) {
             autoFocus
             spellCheck={false}
             aria-label="Your comeback, two lines"
-            placeholder={`Two lines. End on a word that rhymes with "${rhymeTarget(prompt.bar)}".`}
+            placeholder={placeholder}
             onChange={(e) => setDraft(limitDraft(e.target.value))}
             onFocus={(e) => {
               const field = e.currentTarget
@@ -176,7 +181,11 @@ export function RapBattle({ battle, act, input }: RapBattleProps) {
             }}
           />
           <div className="rap__row">
-            <span className="rap__hint">Enter for line two · Enter again to spit</span>
+            <span className="rap__hint">
+              {draft.includes('\n')
+                ? 'Line two lands the punchline · Enter to spit'
+                : 'Line one is the setup · Enter for the punchline'}
+            </span>
             {/* Two lines to spit; a one-line draft still goes in when time runs out, at half. */}
             <button type="submit" className="btn btn--gold" disabled={judging || isHalfBar(draft)}>
               Spit it
