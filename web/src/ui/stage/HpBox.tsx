@@ -13,6 +13,8 @@ const STATUS_TAGS: Record<StatusKind, { label: string; color: string }> = {
   weakened: { label: 'WKN', color: '#ffb3b3' },
   hobbled: { label: 'HBL', color: '#e0c27a' },
   blinded: { label: 'BLN', color: '#f8f8f2' },
+  mirrored: { label: 'MIR', color: '#d6dde6' },
+  incoming: { label: 'L!', color: '#d9a066' },
 }
 
 interface HpBoxProps {

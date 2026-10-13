@@ -1,11 +1,13 @@
+import { L_TRAIN, MIRROR_REFLECT } from '../engine/balance'
 import type { SkillId } from '../engine/types'
-import type { SkillDef } from './types'
+import type { SkillCategory, SkillDef } from './types'
 
 /** Hidden gear sold by the Plug. Passive gear works automatically; active gear is used from GEAR. */
 export const SKILLS: Record<SkillId, SkillDef> = {
   // ── Passive ────────────────────────────────────────────────────────────────
   airpods: {
     id: 'airpods',
+    category: 'drip',
     name: 'See Health',
     item: 'AirPods of Introspection',
     price: 10,
@@ -17,6 +19,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
   },
   pufferJacket: {
     id: 'pufferJacket',
+    category: 'drip',
     name: 'Puffer',
     item: 'Puffer Jacket of the Hawk',
     price: 18,
@@ -29,6 +32,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
   },
   jordans: {
     id: 'jordans',
+    category: 'drip',
     name: 'Jordans',
     item: 'Retro Jordans (Chicago colorway)',
     price: 18,
@@ -41,6 +45,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
   },
   goldGrill: {
     id: 'goldGrill',
+    category: 'drip',
     name: 'Gold Grill',
     item: 'Gold Grill of Menace',
     price: 22,
@@ -55,6 +60,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
   // ── Active ─────────────────────────────────────────────────────────────────
   aviators: {
     id: 'aviators',
+    category: 'trick',
     name: 'Sense Stats',
     item: 'Aviator Glasses of Peering',
     price: 15,
@@ -66,6 +72,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
   },
   airHorn: {
     id: 'airHorn',
+    category: 'trick',
     name: 'Air Horn',
     item: 'Air Horn of Disrespect',
     price: 15,
@@ -80,6 +87,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
   },
   giardiniera: {
     id: 'giardiniera',
+    category: 'trick',
     name: 'Hot Giardiniera',
     item: 'Jar of Hot Giardiniera',
     price: 15,
@@ -94,6 +102,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
   },
   taser: {
     id: 'taser',
+    category: 'trick',
     name: 'Stun Enemy',
     item: 'Taser of Ouch',
     price: 20,
@@ -108,6 +117,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
   },
   pigeonWhistle: {
     id: 'pigeonWhistle',
+    category: 'weapon',
     name: 'Pigeon Whistle',
     item: 'Pigeon Whistle',
     price: 20,
@@ -119,6 +129,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
   },
   bikeLock: {
     id: 'bikeLock',
+    category: 'weapon',
     name: 'Bike Lock',
     item: 'U-Lock of Justice',
     price: 25,
@@ -133,6 +144,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
   },
   energyDrink: {
     id: 'energyDrink',
+    category: 'boost',
     name: 'Energy Drink',
     item: 'Malört-Flavored Energy Drink',
     price: 25,
@@ -147,6 +159,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
   },
   bucketDrum: {
     id: 'bucketDrum',
+    category: 'boost',
     name: 'Bucket Drum',
     item: 'Bucket Drum & Sticks',
     price: 25,
@@ -158,6 +171,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
   },
   durag: {
     id: 'durag',
+    category: 'weapon',
     name: 'Reflex Mode',
     item: 'Durag of Reflex',
     price: 35,
@@ -172,6 +186,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
   },
   glock: {
     id: 'glock',
+    category: 'weapon',
     name: 'Shoot Enemy',
     item: 'Glock of YWN Melly',
     price: 35,
@@ -184,22 +199,81 @@ export const SKILLS: Record<SkillId, SkillDef> = {
       { type: 'heal', min: 6, max: 14 },
     ],
   },
+
+  // ── Elite ──────────────────────────────────────────────────────────────────
+  mixtape: {
+    id: 'mixtape',
+    category: 'elite',
+    name: 'Sample It',
+    item: 'Bootleg Mixtape of Their Greatest Hits',
+    price: 110,
+    description:
+      "Play their last move back at them, 1.75x as hard: their hits and debuffs land on them, their buffs on you. If they've only thrown punches, you throw a big one.",
+    passive: false,
+    cooldown: 3,
+    useText: [
+      "You press play on a bootleg of {enemy}'s greatest hits. Side B is just their moves.",
+    ],
+    effects: [{ type: 'sample', mult: 1.75 }],
+  },
+  cloudGate: {
+    id: 'cloudGate',
+    category: 'elite',
+    name: 'Chrome Mode',
+    item: 'Shard of Cloud Gate Chrome',
+    price: 130,
+    description: `Mirrored for 2 turns: every hit splits on the chrome, half to you and ${MIRROR_REFLECT * 100}% back at them, and debuffs and grabs bounce off.`,
+    passive: false,
+    cooldown: 5,
+    useText: [
+      'You hold up a polished shard of The Bean. {enemy} sees themselves in it, stretched and furious.',
+    ],
+    effects: [{ type: 'status', target: 'self', status: 'mirrored', turns: 2 }],
+  },
+  ventraCard: {
+    id: 'ventraCard',
+    category: 'elite',
+    name: 'Summon the L',
+    item: 'Ventra Card (Unlimited Ride)',
+    price: 150,
+    description: `Tap in. Two turns later the Brown Line plows through them for ${L_TRAIN.pct * 100}% of their max HP (up to ${L_TRAIN.cap}). Can't be dodged or blocked, and they lose that turn.`,
+    passive: false,
+    cooldown: 6,
+    useText: ['You tap your Ventra card on a lamppost. Somewhere down the tracks, a horn answers.'],
+    effects: [{ type: 'status', target: 'foe', status: 'incoming', turns: 2 }],
+  },
 }
 
-/** Shop and menu order: cheap passives first, then actives by price. */
+/** Shop and menu order: by category, then by price. */
 export const SKILL_ORDER: readonly SkillId[] = [
   'airpods',
   'pufferJacket',
   'jordans',
   'goldGrill',
+  'pigeonWhistle',
+  'bikeLock',
+  'durag',
+  'glock',
   'aviators',
   'airHorn',
   'giardiniera',
   'taser',
-  'pigeonWhistle',
-  'bikeLock',
   'energyDrink',
   'bucketDrum',
-  'durag',
-  'glock',
+  'mixtape',
+  'cloudGate',
+  'ventraCard',
+]
+
+/** The Plug's shop sections, in menu order. */
+export const SHOP_CATEGORIES: readonly { id: SkillCategory; label: string; blurb: string }[] = [
+  { id: 'drip', label: 'Drip', blurb: 'Passive gear. Always on, never needs a turn.' },
+  { id: 'weapon', label: 'Weapons', blurb: 'Hit them hard, harder than your hands can.' },
+  { id: 'trick', label: 'Dirty tricks', blurb: 'Stuns, dazes and debuffs. Mess them up first.' },
+  { id: 'boost', label: 'Boosts & heals', blurb: 'Buff yourself up and keep your HP coming back.' },
+  {
+    id: 'elite',
+    label: 'Elite',
+    blurb: 'One-of-a-kind pieces from the back of the van. Pricey. Worth it.',
+  },
 ]

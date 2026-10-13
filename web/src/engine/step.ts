@@ -373,6 +373,7 @@ function startBattle(state: GameState, enemy: Enemy, canFlee: boolean, ctx: Step
       lockedMoves: [],
       lockedGear: [],
       enemyMoveUses: [],
+      enemyLastMove: null,
       enemyFled: false,
     },
   }

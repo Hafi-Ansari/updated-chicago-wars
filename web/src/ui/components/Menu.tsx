@@ -19,6 +19,12 @@ interface MenuProps {
   /** Escape / Backspace handler for submenus. */
   onBack?: (() => void) | undefined
   label: string
+  /**
+   * Show every option's description inside its button on all screens, not just touch.
+   * For menus whose descriptions matter for the choice (the shop), where a detail line
+   * under a long list ends up out of sight.
+   */
+  inlineHints?: boolean
 }
 
 function select(option: MenuOption): void {
@@ -32,9 +38,12 @@ function select(option: MenuOption): void {
  * move menu, buttons stay compact and the active option's description shows
  * underneath (or inline on touch screens).
  */
-export function Menu({ options, columns = 1, onBack, label }: MenuProps) {
+export function Menu({ options, columns = 1, onBack, label, inlineHints = false }: MenuProps) {
   const [active, setActive] = useState<string | null>(null)
-  const detail = options.find((o) => o.key === active)?.hint ?? options.find((o) => o.hint)?.hint
+  const detail = inlineHints
+    ? undefined
+    : (options.find((o) => o.key === active)?.hint ?? options.find((o) => o.hint)?.hint)
+  const hasHints = options.some((o) => o.hint)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -59,7 +68,7 @@ export function Menu({ options, columns = 1, onBack, label }: MenuProps) {
   return (
     <div className="menu-wrap">
       <nav
-        className={`menu menu--cols-${columns} ${detail ? 'menu--has-hints' : ''}`}
+        className={`menu menu--cols-${columns} ${hasHints ? 'menu--has-hints' : ''} ${inlineHints ? 'menu--inline-hints' : ''}`}
         aria-label={label}
       >
         {options.map((option, i) => (
@@ -71,7 +80,7 @@ export function Menu({ options, columns = 1, onBack, label }: MenuProps) {
             onClick={() => select(option)}
             onMouseEnter={() => setActive(option.key)}
             onFocus={() => setActive(option.key)}
-            title={option.hint}
+            title={inlineHints ? undefined : option.hint}
           >
             <span className="key">{i + 1}</span>
             <span className="btn__label">

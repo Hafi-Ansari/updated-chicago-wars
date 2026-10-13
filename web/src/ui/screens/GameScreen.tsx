@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { NEIGHBORHOODS } from '../../content/names'
+import type { SkillCategory } from '../../content/types'
 import { BLOCKS_PER_RUN, type GameEvent, type GameState } from '../../engine'
 import { useGameAudio } from '../audio/useGameAudio'
 import { ActionPanel } from '../components/ActionPanel'
@@ -54,6 +55,11 @@ export function GameScreen({ controller, settings, onSettings }: GameScreenProps
   useGameAudio(shown, current, busy)
   const [history, setHistory] = useState<Line[]>([])
   const [panel, setPanel] = useState<'stats' | 'settings' | null>(null)
+  const [shopSection, setShopSection] = useState<SkillCategory | null>(null)
+  const phaseKind = shown?.phase.kind
+  useEffect(() => {
+    if (phaseKind !== 'shop') setShopSection(null)
+  }, [phaseKind])
 
   const names = useMemo(
     () => ({
@@ -147,6 +153,8 @@ export function GameScreen({ controller, settings, onSettings }: GameScreenProps
               state={shown}
               act={act}
               onShowStats={() => setPanel('stats')}
+              shopSection={shopSection}
+              onShopSection={setShopSection}
             />
           )}
         </div>

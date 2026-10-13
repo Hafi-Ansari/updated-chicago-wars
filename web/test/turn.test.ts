@@ -385,6 +385,82 @@ describe('enemies running', () => {
   })
 })
 
+describe('elite gear', () => {
+  const use = (skill: 'mixtape' | 'cloudGate' | 'ventraCard') => ({ type: 'skill', skill }) as const
+
+  it('the Mixtape plays their last move back at them, louder', () => {
+    const shank = ENEMIES.thug.moves.findIndex((m) => m.text.includes('shank'))
+    let landed = 0
+    for (let seed = 1; seed <= 30; seed++) {
+      const hero = makeHero({ spd: 999 }, { skills: ['mixtape'] })
+      const enemy = makeEnemy({ maxHp: 9999, spd: 0, atk: 1 }, { kind: 'thug' })
+      const ctx = makeCombat(hero, enemy, seed)
+      ctx.battle.enemyLastMove = shank
+      applyEffects(ctx, 'hero', SKILLS.mixtape.effects)
+      const hit = ctx.events.find((e) => e.type === 'hit' && e.attacker === 'hero')
+      if (!hit) continue
+      landed++
+      // The shank's bleed lands on the thug this time (when its own 70% roll says so).
+      expect(ctx.hero.statuses.some((s) => s.kind === 'bleeding')).toBe(false)
+    }
+    expect(landed).toBeGreaterThan(20)
+  })
+
+  it('sampling a self-buff puts it on the hero, and a basic-only foe gets a big hit', () => {
+    const rev = ENEMIES.biker.moves.findIndex((m) => m.text.includes('revs'))
+    const ctx = makeCombat(makeHero(), makeEnemy({ maxHp: 9999 }, { kind: 'biker' }))
+    ctx.battle.enemyLastMove = rev
+    applyEffects(ctx, 'hero', SKILLS.mixtape.effects)
+    expect(ctx.hero.statuses.map((s) => s.kind)).toEqual(['pumped'])
+    expect(ctx.enemy.statuses).toEqual([])
+
+    const basic = makeCombat(makeHero({ atk: 20 }), makeEnemy({ maxHp: 9999, def: 0, spd: 0 }), 2)
+    applyEffects(basic, 'hero', SKILLS.mixtape.effects)
+    const hit = basic.events.find((e) => e.type === 'hit')
+    expect(hit?.type === 'hit' && hit.damage).toBeGreaterThan(25)
+  })
+
+  it('Cloud Gate chrome halves hits, throws the rest back, and bounces debuffs and grabs', () => {
+    const hero = makeHero({ maxHp: 200, def: 0 }, { skills: ['taser', 'cloudGate'] })
+    const ctx = makeCombat(hero, makeEnemy({ maxHp: 200, atk: 40, spd: 0 }), 1)
+    applyEffects(ctx, 'hero', SKILLS.cloudGate.effects)
+    expect(ctx.hero.statuses.map((s) => s.kind)).toEqual(['mirrored'])
+
+    applyEffects(ctx, 'enemy', [
+      { type: 'damage', power: 1 },
+      { type: 'status', target: 'foe', status: 'shook', turns: 2 },
+      { type: 'lockGear' },
+    ])
+    const hit = ctx.events.find((e) => e.type === 'hit' && e.attacker === 'enemy')
+    const reflected = ctx.events.find((e) => e.type === 'reflect')
+    if (hit?.type !== 'hit' || reflected?.type !== 'reflect') throw new Error('expected a hit')
+    expect(hit.guarded).toBe(true)
+    expect(reflected).toMatchObject({ target: 'enemy' })
+    expect(Math.abs(reflected.damage - hit.damage)).toBeLessThanOrEqual(1)
+    expect(ctx.enemy.hp).toBe(200 - reflected.damage)
+    expect(ctx.enemy.statuses.map((s) => s.kind)).toEqual(['shook'])
+    expect(ctx.hero.statuses.map((s) => s.kind)).toEqual(['mirrored'])
+    expect(ctx.battle.lockedGear).toEqual([])
+  })
+
+  it('the L arrives two enemy turns later: unblockable, capped, and it costs them the turn', () => {
+    const hero = makeHero({ maxHp: 9999, def: 999 }, { skills: ['ventraCard'] })
+    const ctx = makeCombat(hero, makeEnemy({ maxHp: 400, spd: 0, def: 999 }), 1)
+    fightRound(ctx, use('ventraCard'))
+    expect(ctx.enemy.statuses.map((s) => s.kind)).toEqual(['incoming'])
+    expect(ctx.events.some((e) => e.type === 'narrate' && e.text.startsWith('DING'))).toBe(false)
+
+    ctx.events.length = 0
+    ctx.enemy.statuses.push({ kind: 'guarded', turns: 5 })
+    fightRound(ctx, jab)
+    const train = ctx.events.findIndex((e) => e.type === 'narrate' && e.text.startsWith('DING'))
+    expect(train).toBeGreaterThanOrEqual(0)
+    expect(ctx.events[train + 1]).toMatchObject({ type: 'hit', target: 'enemy', damage: 40 })
+    expect(ctx.events.some((e) => e.type === 'hit' && e.attacker === 'enemy')).toBe(false)
+    expect(ctx.enemy.statuses.map((s) => s.kind)).not.toContain('incoming')
+  })
+})
+
 describe('fleeRound', () => {
   it('a much faster hero always gets away', () => {
     const ctx = makeCombat(makeHero({ spd: 100 }), makeEnemy({ spd: 0 }))

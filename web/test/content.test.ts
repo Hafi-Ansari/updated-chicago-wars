@@ -3,6 +3,7 @@ import { ENEMIES } from '../src/content/enemies'
 import { HERO_LINES } from '../src/content/hero'
 import { MOVES, STARTING_MOVES } from '../src/content/moves'
 import { NPCS, PLUG_SALE_LINES } from '../src/content/npcs'
+import { SHOP_CATEGORIES, SKILL_ORDER, SKILLS } from '../src/content/skills'
 
 /**
  * Everyone in Chicago raps (except Goons). A spoken line counts as a bar when
@@ -76,5 +77,26 @@ describe('fleeing', () => {
     const runners = Object.values(ENEMIES).filter((d) => d.flee)
     expect(runners.map((d) => d.kind)).toEqual(['goon', 'thug', 'biker'])
     for (const def of runners) expect(def.flee?.lines.length).toBeGreaterThanOrEqual(5)
+  })
+})
+
+describe("the Plug's shop", () => {
+  it('lists every item exactly once, in a category that exists', () => {
+    expect([...SKILL_ORDER].sort()).toEqual(Object.keys(SKILLS).sort())
+    const categories = SHOP_CATEGORIES.map((c) => c.id)
+    for (const id of SKILL_ORDER) expect(categories).toContain(SKILLS[id].category)
+    for (const c of categories) {
+      expect(SKILL_ORDER.some((id) => SKILLS[id].category === c)).toBe(true)
+    }
+  })
+
+  it('has three elite pieces at 100-150 clout, all usable in a fight', () => {
+    const elite = SKILL_ORDER.filter((id) => SKILLS[id].category === 'elite')
+    expect(elite).toHaveLength(3)
+    for (const id of elite) {
+      expect(SKILLS[id].price).toBeGreaterThanOrEqual(100)
+      expect(SKILLS[id].price).toBeLessThanOrEqual(150)
+      expect(SKILLS[id].passive).toBe(false)
+    }
   })
 })

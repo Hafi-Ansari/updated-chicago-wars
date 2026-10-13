@@ -68,6 +68,14 @@ const STATUS_TEXT: Record<StatusKind, Record<'applied' | 'expired', [string, str
     applied: ["You can't see! (Accuracy down)", "X can't see! (Accuracy down)"],
     expired: ['Your eyes adjust.', "X's eyes adjust."],
   },
+  mirrored: {
+    applied: ['You go full chrome! (Mirrored)', 'X goes full chrome! (Mirrored)'],
+    expired: ['The chrome dulls back to normal.', "X's chrome dulls back to normal."],
+  },
+  incoming: {
+    applied: ['A train is coming for you...', 'The L is on its way for X... (2 turns)'],
+    expired: ['The tracks go quiet.', 'The L rolls on down the line.'],
+  },
 }
 
 const who = (side: Side, names: Names, capital = true) =>
@@ -120,6 +128,14 @@ export function describe(event: GameEvent, names: Names): Line | null {
             ? `You're dazed and hit yourself for ${event.damage}!`
             : `${names.enemy} is dazed and hits themselves for ${event.damage}!`,
         tone: event.target === 'hero' ? 'danger' : 'normal',
+      }
+    case 'reflect':
+      return {
+        text:
+          event.target === 'hero'
+            ? `The chrome throws ${event.damage} damage back at you!`
+            : `The chrome throws ${event.damage} damage back at ${names.enemy}!`,
+        tone: event.target === 'hero' ? 'danger' : 'reward',
       }
     case 'recoil':
       return {

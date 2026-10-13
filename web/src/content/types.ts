@@ -40,8 +40,12 @@ export interface MoveDef {
   sayChance?: number
 }
 
+/** Shop sections at the Plug's. */
+export type SkillCategory = 'drip' | 'weapon' | 'trick' | 'boost' | 'elite'
+
 export interface SkillDef {
   id: SkillId
+  category: SkillCategory
   /** Battle-menu label. */
   name: string
   /** What the Plug sells. */

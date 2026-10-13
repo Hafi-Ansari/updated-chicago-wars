@@ -62,6 +62,7 @@ function playNext(view: ViewState): ViewState {
     case 'heal':
     case 'selfHit':
     case 'recoil':
+    case 'reflect':
       if (event.target === 'hero') display.heroHp = event.hpAfter
       else display.enemyHp = event.hpAfter
       break

@@ -55,6 +55,10 @@ export const WEAKENED_ATK_MULT = 0.65
 export const HOBBLED_SPD_MULT = 0.5
 /** Blinded fighters' attacks connect this much less often. */
 export const BLINDED_ACCURACY_MULT = 0.7
+/** Share of each hit a Mirrored fighter throws back at the attacker (they also take half). */
+export const MIRROR_REFLECT = 0.5
+/** The L (Ventra Card): share of the target's max HP it hits for, and the cap. */
+export const L_TRAIN = { pct: 0.25, cap: 40 }
 /** Chance a dazed fighter hurts themselves instead of acting, and how hard. */
 export const DAZED = { selfHitChance: 0.35, power: 0.4 }
 
@@ -70,8 +74,8 @@ export const OPENING_TARGETS_OFFERED = 3
 // ── Run structure ────────────────────────────────────────────────────────────
 
 export const BLOCKS_PER_RUN = 12
-/** Enemy stats grow by this fraction per block (block 6 = +36%). */
-export const ENEMY_SCALING_PER_BLOCK = 0.06
+/** Enemy stats grow by this fraction per block (block 6 = +39%). */
+export const ENEMY_SCALING_PER_BLOCK = 0.065
 
 /** What walking to the next block runs into. Vendors are visited by choice, not at random. */
 export type EncounterKind = 'fight' | 'streetEvent'

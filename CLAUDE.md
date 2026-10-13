@@ -47,6 +47,7 @@ Ids are string unions in `src/engine/types.ts`, and content is typed `Record<Id,
 - **New `EnemyKind`**: add stats to `ENEMY_STATS` and `enemyWeights` in `balance.ts`, a def to `ENEMIES` and a sprite. Sprites load by id from `public/sprites/<id>.png`; add a recipe to `CAST` in `scripts/build-sprites.mjs`, then run `npm run sprites`.
 - **New phase or action**: handle it in `handle()` (`step.ts`), in `src/ui/components/ActionPanel.tsx` and in the bot's `chooseAction` in `test/sim.ts`. The bot is what keeps the balance test passing.
 - **New `GameEvent`**: handle it in `narration.ts`, plus `useGame.ts`, `Stage.tsx` and `useGameAudio.ts` if it changes HP or clout or needs animation or sound.
+- **New gear**: give it a `category` and a place in `SKILL_ORDER` (`src/content/skills.ts`); `test/content.test.ts` checks both. Add it to the bot's `SHOP_PRIORITY`/`GEAR_PRIORITY` in `test/sim.ts` if a sensible player would buy it, or the balance test won't see it.
 
 ## Web: gotchas
 

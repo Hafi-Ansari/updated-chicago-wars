@@ -31,8 +31,26 @@ export interface RunResult {
   level: number
 }
 
-const GEAR_PRIORITY: SkillId[] = ['glock', 'durag', 'taser', 'aviators']
-const SHOP_PRIORITY: SkillId[] = ['taser', 'durag', 'glock', 'aviators', 'airpods']
+const GEAR_PRIORITY: SkillId[] = [
+  'ventraCard',
+  'cloudGate',
+  'glock',
+  'durag',
+  'mixtape',
+  'taser',
+  'aviators',
+]
+/** Core gear first; elite pieces once the bot is rich enough. */
+const SHOP_PRIORITY: SkillId[] = [
+  'taser',
+  'durag',
+  'glock',
+  'aviators',
+  'airpods',
+  'ventraCard',
+  'cloudGate',
+  'mixtape',
+]
 const TRAINING_PRIORITY: BoostableStat[] = ['atk', 'maxHp', 'def', 'spd']
 /** Clout the bot keeps back after training, for hot dogs and gear. */
 const TRAINING_RESERVE = 15

@@ -7,9 +7,9 @@
  * Statuses applied mid-turn don't count down until the owner's next turn.
  */
 
-import { BLEED_PCT_PER_TURN, VIBING_HEAL_PCT } from '../balance'
+import { BLEED_PCT_PER_TURN, L_TRAIN, VIBING_HEAL_PCT } from '../balance'
 import type { Side, StatusKind } from '../types'
-import { type CombatContext, fighter } from './context'
+import { type CombatContext, fighter, other } from './context'
 import { applyDamage, applyHeal, percentDamage } from './damage'
 
 const BLEED_CAP = 12
@@ -53,8 +53,33 @@ export function beginTurn(ctx: CombatContext, side: Side): { skip: boolean } {
         if (amount > 0) ctx.emit({ type: 'heal', target: side, amount, hpAfter: c.hp })
         break
       }
+      case 'incoming': {
+        // The L arrives on the owner's last counted turn: unblockable, and it costs them the turn.
+        if (status.turns > 0) break
+        const damage = percentDamage(c, L_TRAIN.pct, L_TRAIN.cap)
+        const hpAfter = applyDamage(c, damage)
+        if (side === 'hero') ctx.run.damageTaken += damage
+        else ctx.run.damageDealt += damage
+        ctx.emit({
+          type: 'narrate',
+          text: `DING DING! The Brown Line comes screaming down the block and flattens ${c.name}!`,
+          tone: 'reward',
+        })
+        const attacker = other(side)
+        ctx.emit({
+          type: 'hit',
+          attacker,
+          target: side,
+          damage,
+          crit: false,
+          guarded: false,
+          hpAfter,
+        })
+        skip = true
+        break
+      }
       default:
-        // Passive modifiers (pumped, shook, hyped, guarded, dazed, frostbit) act elsewhere.
+        // Passive modifiers (pumped, shook, hyped, guarded, dazed, frostbit, mirrored…) act elsewhere.
         break
     }
   }

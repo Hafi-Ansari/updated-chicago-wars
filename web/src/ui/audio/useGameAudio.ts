@@ -4,7 +4,13 @@ import type { PlayingEvent } from '../useGame'
 import { music, type SongId } from './music'
 import { sfx } from './sfx'
 
-const GOOD_STATUSES: ReadonlySet<StatusKind> = new Set(['pumped', 'hyped', 'guarded', 'vibing'])
+const GOOD_STATUSES: ReadonlySet<StatusKind> = new Set([
+  'pumped',
+  'hyped',
+  'guarded',
+  'vibing',
+  'mirrored',
+])
 
 /** The sound cue for an engine event, if it has one. Text events get typewriter blips instead. */
 function cueFor(event: GameEvent): (() => void) | null {
@@ -18,6 +24,8 @@ function cueFor(event: GameEvent): (() => void) | null {
     case 'selfHit':
     case 'recoil':
       return sfx.hurt
+    case 'reflect':
+      return event.target === 'hero' ? sfx.hurt : sfx.hit
     case 'heal':
       return event.amount > 0 ? sfx.heal : null
     case 'status': {

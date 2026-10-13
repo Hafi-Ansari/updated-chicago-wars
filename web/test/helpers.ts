@@ -74,6 +74,7 @@ export function makeCombat(
       lockedMoves: [],
       lockedGear: [],
       enemyMoveUses: [],
+      enemyLastMove: null,
       enemyFled: false,
     },
   }

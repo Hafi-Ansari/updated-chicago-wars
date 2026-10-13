@@ -5,7 +5,8 @@ import { MOVES } from '../../content/moves'
 import { NEIGHBORHOODS } from '../../content/names'
 import { NPC_ORDER } from '../../content/npcs'
 import { OPENINGS } from '../../content/openings'
-import { SKILL_ORDER, SKILLS } from '../../content/skills'
+import { SHOP_CATEGORIES, SKILL_ORDER, SKILLS } from '../../content/skills'
+import type { SkillCategory } from '../../content/types'
 import {
   type Action,
   BLOCKS_PER_RUN,
@@ -25,6 +26,12 @@ interface ActionPanelProps {
   state: GameState
   act: (action: Action) => void
   onShowStats: () => void
+  /**
+   * The open shop section. Kept by the parent because this panel unmounts while a
+   * purchase plays out, and buying shouldn't kick you back to the section list.
+   */
+  shopSection: SkillCategory | null
+  onShopSection: (section: SkillCategory | null) => void
 }
 
 const RISK_LABEL = { safe: 'safe', risky: 'risky', reckless: 'reckless!' } as const
@@ -46,7 +53,13 @@ function ppLabel(slot: MoveSlot): string {
   return slot.pp === null || max === null ? 'PP ∞' : `PP ${slot.pp}/${max}`
 }
 
-export function ActionPanel({ state, act, onShowStats }: ActionPanelProps) {
+export function ActionPanel({
+  state,
+  act,
+  onShowStats,
+  shopSection,
+  onShopSection,
+}: ActionPanelProps) {
   // Which submenu is open; the panel is re-keyed per phase, so this resets between phases.
   const [submenu, setSubmenu] = useState<'moves' | 'gear' | { forgetFor: MoveId } | null>(null)
   const { phase, hero } = state
@@ -256,27 +269,59 @@ export function ActionPanel({ state, act, onShowStats }: ActionPanelProps) {
         />
       )
 
-    case 'shop':
+    case 'shop': {
+      const inCategory = (c: SkillCategory) => SKILL_ORDER.filter((s) => SKILLS[s].category === c)
+      const section = SHOP_CATEGORIES.find((c) => c.id === shopSection)
+
+      if (section) {
+        return (
+          <Menu
+            label={section.label}
+            inlineHints
+            onBack={() => onShopSection(null)}
+            options={[
+              ...inCategory(section.id).map((s): MenuOption => {
+                const def = SKILLS[s]
+                const owned = hero.skills.includes(s)
+                return {
+                  key: s,
+                  label: def.item,
+                  sub: owned ? 'owned' : `${def.price} clout`,
+                  hint: def.description,
+                  disabled: owned || hero.clout < def.price,
+                  onSelect: () => act({ type: 'buy', skill: s }),
+                }
+              }),
+              { key: 'back', label: 'Back', sub: 'Esc', onSelect: () => onShopSection(null) },
+            ]}
+          />
+        )
+      }
+
       return (
         <Menu
           label="Shop"
+          inlineHints
           options={[
-            ...SKILL_ORDER.map((s): MenuOption => {
-              const def = SKILLS[s]
-              const owned = hero.skills.includes(s)
+            ...SHOP_CATEGORIES.map((c): MenuOption => {
+              const items = inCategory(c.id)
+              const owned = items.filter((s) => hero.skills.includes(s)).length
+              const cheapest = Math.min(
+                ...items.filter((s) => !hero.skills.includes(s)).map((s) => SKILLS[s].price),
+              )
               return {
-                key: s,
-                label: def.item,
-                sub: owned ? 'owned' : `${def.price} clout`,
-                hint: def.description,
-                disabled: owned || hero.clout < def.price,
-                onSelect: () => act({ type: 'buy', skill: s }),
+                key: c.id,
+                label: c.label,
+                sub: owned === items.length ? 'all owned' : `from ${cheapest} clout`,
+                hint: c.blurb,
+                onSelect: () => onShopSection(c.id),
               }
             }),
             { key: 'leave', label: "I'm good", onSelect: () => act({ type: 'leave' }) },
           ]}
         />
       )
+    }
 
     case 'gameOver':
     case 'victory':

@@ -4,9 +4,10 @@
  * other side.
  */
 
+import { ENEMIES } from '../../content/enemies'
 import { HERO_LINES } from '../../content/hero'
 import { assertNever } from '../assert'
-import { GUARDED_DAMAGE_MULT, MIN_DAMAGE, SAY_CHANCE } from '../balance'
+import { GUARDED_DAMAGE_MULT, MIN_DAMAGE, MIRROR_REFLECT, SAY_CHANCE } from '../balance'
 import { fill } from '../text'
 import type { Effect, Side } from '../types'
 import { type CombatContext, fighter, other } from './context'
@@ -74,6 +75,15 @@ function applyEffect(ctx: CombatContext, user: Side, effect: Effect, dealtSoFar:
   const self = fighter(ctx, user)
   const foe = fighter(ctx, target)
 
+  // Grabs at a Mirrored fighter come away with nothing but a reflection.
+  if (isSteal(effect) && hasStatus(foe, 'mirrored')) {
+    ctx.emit({
+      type: 'narrate',
+      text: `${self.name} grabs at the chrome and comes away with nothing but a reflection.`,
+    })
+    return 0
+  }
+
   switch (effect.type) {
     case 'damage': {
       const hits = effect.hits ?? 1
@@ -129,11 +139,20 @@ function applyEffect(ctx: CombatContext, user: Side, effect: Effect, dealtSoFar:
     case 'stealClout':
       stealClout(ctx, user, ctx.rng.int(effect.min, effect.max))
       return 0
-    case 'status':
-      if (effect.chance === undefined || ctx.rng.chance(effect.chance)) {
-        applyStatus(ctx, effect.target === 'self' ? user : target, effect.status, effect.turns)
+    case 'status': {
+      if (effect.chance !== undefined && !ctx.rng.chance(effect.chance)) return 0
+      if (effect.target === 'self') {
+        applyStatus(ctx, user, effect.status, effect.turns)
+      } else if (hasStatus(foe, 'mirrored')) {
+        ctx.emit({ type: 'narrate', text: 'It bounces right off the chrome!' })
+        applyStatus(ctx, user, effect.status, effect.turns)
+      } else {
+        applyStatus(ctx, target, effect.status, effect.turns)
       }
       return 0
+    }
+    case 'sample':
+      return user === 'hero' ? sample(ctx, effect.mult) : 0
     case 'reveal':
       ctx.battle.revealed = true
       return 0
@@ -153,7 +172,10 @@ export function attack(ctx: CombatContext, user: Side, power = 1, pierce = false
   return dealDamage(ctx, user, roll.damage, roll.crit)
 }
 
-/** Lands damage on the foe. Guarded foes take half (unless `unblockable`). */
+/**
+ * Lands damage on the foe. Guarded foes take half (unless `unblockable`); Mirrored foes
+ * take half too, and the other half flies back at the attacker.
+ */
 function dealDamage(
   ctx: CombatContext,
   user: Side,
@@ -163,7 +185,8 @@ function dealDamage(
 ): number {
   const target = other(user)
   const foe = fighter(ctx, target)
-  const guarded = !unblockable && hasStatus(foe, 'guarded')
+  const mirrored = !unblockable && hasStatus(foe, 'mirrored')
+  const guarded = !unblockable && (mirrored || hasStatus(foe, 'guarded'))
   const damage = guarded ? Math.max(MIN_DAMAGE, Math.round(amount * GUARDED_DAMAGE_MULT)) : amount
   const hpAfter = applyDamage(foe, damage)
 
@@ -174,6 +197,7 @@ function dealDamage(
     ctx.run.damageTaken += damage
   }
   ctx.emit({ type: 'hit', attacker: user, target, damage, crit, guarded, hpAfter })
+  if (mirrored) reflect(ctx, user, amount)
 
   if (user === 'hero' && crit && hpAfter > 0 && ctx.rng.chance(SAY_CHANCE.heroCrit)) {
     const line = ctx.pick('hero.crit', HERO_LINES.crit)
@@ -185,6 +209,39 @@ function dealDamage(
     })
   }
   return damage
+}
+
+/**
+ * Bootleg Mixtape: the enemy's last special move, played back by the hero with its
+ * damage scaled up. Effects keep their targets relative to the user, so the enemy's
+ * attacks and debuffs land on the enemy and its self-buffs land on the hero.
+ */
+function sample(ctx: CombatContext, mult: number): number {
+  const last = ctx.battle.enemyLastMove
+  const move = last === null ? undefined : ENEMIES[ctx.enemy.kind].moves[last]
+  if (!move) {
+    ctx.emit({ type: 'narrate', text: 'Nothing worth sampling yet, so you crank it up and swing.' })
+    return attack(ctx, 'hero', mult)
+  }
+  ctx.emit({ type: 'narrate', text: 'Their own move comes back at them, remixed and louder!' })
+  return applyEffects(
+    ctx,
+    'hero',
+    move.effects.map((e) => louder(e, mult)),
+  )
+}
+
+function louder(effect: Effect, mult: number): Effect {
+  switch (effect.type) {
+    case 'damage':
+      return { ...effect, power: effect.power * mult }
+    case 'percentDamage':
+      return { ...effect, pct: effect.pct * mult, cap: effect.cap * mult }
+    case 'execute':
+      return { ...effect, fallbackPower: effect.fallbackPower * mult }
+    default:
+      return effect
+  }
 }
 
 /** Moves clout from the foe to the user. An enemy holds it as extra reward until beaten. */
@@ -204,6 +261,17 @@ function stealClout(ctx: CombatContext, user: Side, amount: number): void {
     ctx.run.cloutEarned += taken
     ctx.emit({ type: 'clout', amount: taken, total: hero.clout })
   }
+}
+
+/** A Mirrored fighter throws part of a hit (`incoming`, before the halving) back at the attacker. */
+function reflect(ctx: CombatContext, attacker: Side, incoming: number): void {
+  const self = fighter(ctx, attacker)
+  if (isDown(self)) return
+  const amount = Math.max(MIN_DAMAGE, Math.round(incoming * MIRROR_REFLECT))
+  const hpAfter = applyDamage(self, amount)
+  if (attacker === 'hero') ctx.run.damageTaken += amount
+  else ctx.run.damageDealt += amount
+  ctx.emit({ type: 'reflect', target: attacker, damage: amount, hpAfter })
 }
 
 function heal(ctx: CombatContext, user: Side, amount: number): void {

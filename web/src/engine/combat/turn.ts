@@ -139,7 +139,9 @@ function takeTurn(ctx: CombatContext, side: Side, act: () => void): void {
   const { skip } = beginTurn(ctx, side)
   if (outcome(ctx) === 'ongoing') {
     const c = fighter(ctx, side)
-    if (skip) narrate(ctx, `${c.name} is stunned and can't move!`, 'info')
+    if (skip && hasStatus(c, 'stunned'))
+      narrate(ctx, `${c.name} is stunned and can't move!`, 'info')
+    else if (skip) narrate(ctx, `${c.name} is laid out on the tracks and loses the turn!`, 'info')
     else if (hasStatus(c, 'dazed') && ctx.rng.chance(DAZED.selfHitChance)) hitSelf(ctx, side)
     else act()
   }
@@ -203,8 +205,10 @@ function available(ctx: CombatContext, move: EnemyMove, index: number): boolean 
 function enemyAct(ctx: CombatContext, action: EnemyAction): void {
   const def = ENEMIES[ctx.enemy.kind]
   if (enemyRuns(ctx)) return
+  const index = action === null ? -1 : def.moves.indexOf(action)
+  ctx.battle.enemyLastMove = index >= 0 ? index : null
   if (action !== null) {
-    ctx.battle.enemyMoveUses.push(def.moves.indexOf(action))
+    ctx.battle.enemyMoveUses.push(index)
     if (ctx.rng.chance(SAY_CHANCE.enemyTaunt)) {
       say(ctx, 'enemy', ctx.pick(`${def.kind}.taunt`, def.taunt))
     }

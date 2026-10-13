@@ -65,6 +65,7 @@ function animationsFor(
     case 'tick':
     case 'selfHit':
     case 'recoil':
+    case 'reflect':
       return { [e.target]: 'anim-hit' }
     case 'heal':
       return { [e.target]: 'anim-heal' }
@@ -93,6 +94,7 @@ function floatFor(
     case 'tick':
     case 'selfHit':
     case 'recoil':
+    case 'reflect':
       return { target: e.target, text: `-${e.damage}`, variant: '' }
     case 'heal':
       return e.amount > 0

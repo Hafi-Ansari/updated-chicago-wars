@@ -59,6 +59,12 @@ src/ui/        React: plays events back (typewriter, animations), dispatches act
   make room (`GameState.seenMoves` minus what they know) can be learned again at no cost, within
   the 6-move limit. He also runs one training session per visit: a fixed boost to any stat for
   clout, with every session making the next one pricier (`TRAINING` in `balance.ts`).
+- **The Plug** sells gear in sections (`category` on each item in `src/content/skills.ts`):
+  Drip (passive), Weapons, Dirty tricks, Boosts & heals, and Elite. The three elite pieces
+  (100–150 clout) each add a mechanic of their own: the Bootleg Mixtape replays the enemy's
+  last move at them, louder; Cloud Gate Chrome splits every hit, half to you and half back at
+  them, and bounces debuffs; the Ventra Card summons the L, which flattens them two turns
+  later. Gear cooldowns reset after every fight, so long cooldowns mean once per fight.
 - **Dialogue**: everyone raps except Goons. Lines are pools in `src/content/`, and
   `pickFresh` (`src/engine/lines.ts`) avoids repeating recent picks.
   `test/content.test.ts` checks that every rapper's spoken lines are two-line bars.

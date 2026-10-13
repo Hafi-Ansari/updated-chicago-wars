@@ -28,6 +28,9 @@ export type SkillId =
   | 'pufferJacket'
   | 'jordans'
   | 'goldGrill'
+  | 'mixtape'
+  | 'cloudGate'
+  | 'ventraCard'
 
 /** Fighting moves the hero learns by leveling up or training with the Gangsta. */
 export type MoveId =
@@ -65,6 +68,10 @@ export type StatusKind =
   | 'weakened'
   | 'hobbled'
   | 'blinded'
+  /** Cloud Gate Chrome: debuffs and grabs bounce back, and part of every hit is reflected. */
+  | 'mirrored'
+  /** Ventra Card: the L arrives when this runs out. */
+  | 'incoming'
 
 export type OpeningTarget =
   | 'eyes'
@@ -157,6 +164,8 @@ export type Effect =
   | { type: 'lockGear' }
   /** Pockets some of the foe's clout; an enemy adds it to their reward, so winning gets it back. */
   | { type: 'stealClout'; min: number; max: number }
+  /** Bootleg Mixtape: replays the enemy's last move (or a basic hit) against them, damage × mult. */
+  | { type: 'sample'; mult: number }
   | { type: 'status'; target: 'self' | 'foe'; status: StatusKind; turns: number; chance?: number }
   | { type: 'reveal' }
 
@@ -177,6 +186,8 @@ export interface BattleState {
   lockedGear: SkillId[]
   /** Index into the enemy's `moves` for every special move used, for per-fight limits. */
   enemyMoveUses: number[]
+  /** The enemy's last action: an index into its `moves`, or null for a basic attack (or none yet). */
+  enemyLastMove: number | null
   /** The enemy ran off (which counts as a win). */
   enemyFled: boolean
 }
@@ -284,6 +295,8 @@ export type GameEvent =
   | { type: 'tick'; target: Side; status: StatusKind; damage: number; hpAfter: number }
   | { type: 'selfHit'; target: Side; damage: number; hpAfter: number }
   | { type: 'recoil'; target: Side; damage: number; hpAfter: number }
+  /** A Mirrored fighter threw part of a hit back at `target`. */
+  | { type: 'reflect'; target: Side; damage: number; hpAfter: number }
   | { type: 'heal'; target: Side; amount: number; hpAfter: number }
   | { type: 'status'; target: Side; status: StatusKind; change: 'applied' | 'expired' }
   | { type: 'faint'; target: Side }

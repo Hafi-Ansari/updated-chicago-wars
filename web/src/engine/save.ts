@@ -40,6 +40,7 @@ function fromV2(state: Record<string, unknown>): void {
     battle.lockedMoves = []
     battle.lockedGear = []
     battle.enemyMoveUses = []
+    battle.enemyLastMove = null
     battle.enemyFled = false
   }
   if (phase.kind === 'learnMove') {
