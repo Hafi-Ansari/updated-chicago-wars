@@ -1,4 +1,12 @@
-export { BLOCKS_PER_RUN, GAUNTLET, isGauntlet, MAX_MOVES, UNFORGETTABLE_MOVE } from './balance'
+export {
+  BLOCKS_PER_RUN,
+  CYPHER,
+  GAUNTLET,
+  isGauntlet,
+  MAX_MOVES,
+  UNFORGETTABLE_MOVE,
+} from './balance'
+export { canBattleRap, cypherPrompt } from './combat/cypher'
 export { canUseMove, canUseSkill } from './combat/turn'
 export { type ChoiceView, choicesFor } from './dialogue'
 export { createRng } from './rng'

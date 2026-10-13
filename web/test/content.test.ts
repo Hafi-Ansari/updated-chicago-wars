@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { rhymeScore } from '../server/rhyme'
+import { CYPHERS } from '../src/content/cyphers'
 import { ENEMIES } from '../src/content/enemies'
 import { HERO_LINES } from '../src/content/hero'
 import { MOVES, STARTING_MOVES } from '../src/content/moves'
@@ -145,6 +147,46 @@ describe("the Plug's shop", () => {
       expect(SKILLS[id].price).toBeGreaterThanOrEqual(100)
       expect(SKILLS[id].price).toBeLessThanOrEqual(150)
       expect(SKILLS[id].passive).toBe(false)
+    }
+  })
+})
+
+describe('Battle Rap content', () => {
+  it('every enemy has prompts, each with one fire, one decent and one flop comeback', () => {
+    for (const [kind, prompts] of Object.entries(CYPHERS)) {
+      expect(prompts.length, kind).toBeGreaterThanOrEqual(3)
+      for (const prompt of prompts) {
+        expect(prompt.answers.map((a) => a.tier).sort(), prompt.bar).toEqual([
+          'decent',
+          'fire',
+          'flop',
+        ])
+      }
+    }
+  })
+
+  it('rappers spit bars, and the hero answers in bars unless they flop', () => {
+    for (const [kind, prompts] of Object.entries(CYPHERS)) {
+      const def = ENEMIES[kind as keyof typeof ENEMIES]
+      for (const prompt of prompts) {
+        if (def.rhymes) expect(isBar(prompt.bar), prompt.bar).toBe(true)
+        for (const answer of prompt.answers) {
+          if (answer.tier !== 'flop') expect(isBar(answer.text), answer.text).toBe(true)
+        }
+      }
+    }
+  })
+
+  it("fire and decent comebacks rhyme with the prompt (by the server's scorer); flops don't", () => {
+    for (const prompts of Object.values(CYPHERS)) {
+      for (const prompt of prompts) {
+        for (const answer of prompt.answers) {
+          const { score, enemyWord, playerWord } = rhymeScore(prompt.bar, answer.text)
+          const label = `${enemyWord} / ${playerWord}: ${answer.text}`
+          if (answer.tier === 'flop') expect(score, label).toBeLessThan(0.6)
+          else expect(score, label).toBeGreaterThanOrEqual(0.6)
+        }
+      }
     }
   })
 })

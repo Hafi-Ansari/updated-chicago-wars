@@ -22,8 +22,18 @@ import {
   SAY_CHANCE,
 } from '../balance'
 import { fill } from '../text'
-import type { BattleState, Hero, MoveId, OpeningTarget, Side, SkillId, Tone } from '../types'
+import type {
+  BarResult,
+  BattleState,
+  Hero,
+  MoveId,
+  OpeningTarget,
+  Side,
+  SkillId,
+  Tone,
+} from '../types'
 import { type CombatContext, fighter, other } from './context'
+import { spitBar, unlockRap } from './cypher'
 import { applyDamage, applyHeal, initiative, mitigation } from './damage'
 import { aimsAtFoe, applyEffects, attack } from './effects'
 import { lockableGear, lockableMoves } from './locks'
@@ -131,7 +141,26 @@ export function strikeOpening(ctx: CombatContext, target: OpeningTarget | 'brace
   )
   for (const line of result.text) narrate(ctx, line)
   applyEffects(ctx, result.winner, result.effects)
+  unlockRap(ctx)
   rally(ctx)
+  return outcome(ctx)
+}
+
+/**
+ * The hero answers a pending cypher, then the enemy takes its turn as usual. The bar is
+ * the hero's move for the round, so it always comes first.
+ */
+export function cypherRound(ctx: CombatContext, bar: BarResult): BattleOutcome {
+  const cypher = ctx.battle.cypher
+  ctx.battle.cypher = null
+  if (!cypher) return outcome(ctx)
+  tickCooldowns(ctx)
+  ctx.battle.round += 1
+
+  const enemyAction = chooseEnemyAction(ctx)
+  takeTurn(ctx, 'hero', () => spitBar(ctx, cypher, bar))
+  if (outcome(ctx) === 'ongoing') takeTurn(ctx, 'enemy', () => enemyAct(ctx, enemyAction))
+  maybeOpening(ctx)
   return outcome(ctx)
 }
 
@@ -148,6 +177,8 @@ function takeTurn(ctx: CombatContext, side: Side, act: () => void): void {
     else act()
   }
   endTurn(ctx, side)
+  // Battle Rap unlocks before the rally heals the enemy back above half.
+  unlockRap(ctx)
   rally(ctx)
 }
 

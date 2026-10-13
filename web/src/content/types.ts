@@ -1,6 +1,7 @@
 import type { Range } from '../engine/balance'
 import type {
   BoostableStat,
+  CypherTier,
   Effect,
   EnemyKind,
   MoveId,
@@ -95,6 +96,18 @@ export interface EnemyDef {
    * yell on the way out. Running counts as a win for the hero.
    */
   flee?: { chance: number; lines: Pool }
+}
+
+/** A Battle Rap comeback offered in pick mode; legendary is only reachable by typing. */
+export interface CypherAnswer {
+  tier: Exclude<CypherTier, 'legendary'>
+  text: Text
+}
+
+/** A bar an enemy spits in Battle Rap, with three comebacks for pick mode. */
+export interface CypherPrompt {
+  bar: Text
+  answers: readonly [CypherAnswer, CypherAnswer, CypherAnswer]
 }
 
 export interface HeroLines {

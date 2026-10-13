@@ -7,7 +7,7 @@
 import { NPCS } from '../content/npcs'
 import type { GameState, MoveId } from './types'
 
-export const SAVE_VERSION: GameState['version'] = 3
+export const SAVE_VERSION: GameState['version'] = 4
 
 /** Brings a save up to the current GameState shape, or returns null if it can't. */
 export function migrateSave(save: unknown): GameState | null {
@@ -15,6 +15,7 @@ export function migrateSave(save: unknown): GameState | null {
   // structuredClone keeps the caller's object untouched; saves are plain JSON.
   const state = structuredClone(save) as Record<string, unknown>
   if (state.version === 2) fromV2(state)
+  if (state.version === 3) fromV3(state)
   return state.version === SAVE_VERSION ? (state as unknown as GameState) : null
 }
 
@@ -54,6 +55,18 @@ function fromV2(state: Record<string, unknown>): void {
     if (!(String(phase.node) in nodes)) phase.node = 'menu' in nodes ? 'menu' : 'intro'
   }
   state.version = 3
+}
+
+/** v3 → v4: Battle Rap. A battle saved mid-fight starts with it locked and unspent. */
+function fromV3(state: Record<string, unknown>): void {
+  const phase = state.phase as Record<string, unknown>
+  if (phase.kind === 'battle') {
+    const battle = phase.battle as Record<string, unknown>
+    battle.rapUnlocked = false
+    battle.rapUsed = false
+    battle.cypher = null
+  }
+  state.version = 4
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

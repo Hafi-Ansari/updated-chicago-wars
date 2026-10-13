@@ -187,6 +187,14 @@ export function describe(event: GameEvent, names: Names): Line | null {
       const skill = SKILLS[event.skill]
       return { text: `You got the ${skill.item}! (${skill.name})`, tone: 'reward' }
     }
+    case 'rapUnlocked':
+      return {
+        text: 'The crowd starts chanting. Battle Rap is unlocked!',
+        tone: 'reward',
+      }
+    case 'cypher':
+      // The engine narrates the crowd's reaction; this event drives the stage and sound.
+      return null
     case 'locked':
       return {
         text:

@@ -91,7 +91,7 @@ function applyEffect(ctx: CombatContext, user: Side, effect: Effect, dealtSoFar:
       const power = effect.power * (finisher ? (effect.finisher?.mult ?? 1) : 1)
       let dealt = 0
       for (let i = 0; i < hits && !isDown(foe); i++) {
-        dealt += attack(ctx, user, power, effect.pierce ?? false)
+        dealt += attack(ctx, user, power, effect.pierce ?? false, effect.sure ?? false)
       }
       return dealt
     }
@@ -161,10 +161,16 @@ function applyEffect(ctx: CombatContext, user: Side, effect: Effect, dealtSoFar:
   }
 }
 
-/** One normal attack roll: can be dodged, can crit. Returns damage dealt. */
-export function attack(ctx: CombatContext, user: Side, power = 1, pierce = false): number {
+/** One normal attack roll: can be dodged (unless `sure`), can crit. Returns damage dealt. */
+export function attack(
+  ctx: CombatContext,
+  user: Side,
+  power = 1,
+  pierce = false,
+  sure = false,
+): number {
   const target = other(user)
-  const roll = rollAttack(ctx.rng, fighter(ctx, user), fighter(ctx, target), power, pierce)
+  const roll = rollAttack(ctx.rng, fighter(ctx, user), fighter(ctx, target), power, pierce, sure)
   if (roll.dodged) {
     ctx.emit({ type: 'miss', attacker: user, target, reason: 'dodge' })
     return 0

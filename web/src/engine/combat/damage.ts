@@ -30,7 +30,7 @@ export function dodgeChance(attacker: Stats, defender: Stats): number {
 
 /**
  * Rolls one attack. `power` scales the attacker's ATK (1 = a basic hit);
- * `pierce` ignores the defender's Defense.
+ * `pierce` ignores the defender's Defense; `sure` skips the dodge roll.
  */
 export function rollAttack(
   rng: Rng,
@@ -38,11 +38,12 @@ export function rollAttack(
   defender: Combatant,
   power = 1,
   pierce = false,
+  sure = false,
 ): AttackRoll {
   const atk = effectiveStats(attacker)
   const def = effectiveStats(defender)
 
-  if (rng.chance(dodgeChance(atk, def))) return { dodged: true }
+  if (!sure && rng.chance(dodgeChance(atk, def))) return { dodged: true }
 
   const crit = rng.chance(atk.crit)
   const raw = rng.vary(atk.atk * power, DAMAGE_VARIANCE) * (pierce ? 1 : mitigation(def.def))

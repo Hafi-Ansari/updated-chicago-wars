@@ -32,11 +32,13 @@ import {
   UNFORGETTABLE_MOVE,
 } from './balance'
 import type { CombatContext } from './combat/context'
+import { canBattleRap, startCypher } from './combat/cypher'
 import { applyHeal } from './combat/damage'
 import {
   type BattleOutcome,
   canUseMove,
   canUseSkill,
+  cypherRound,
   fightRound,
   fleeRound,
   strikeOpening,
@@ -382,6 +384,9 @@ function startBattle(state: GameState, enemy: Enemy, canFlee: boolean, ctx: Step
       enemyLastMove: null,
       enemyFled: false,
       enemyRally: state.block >= RALLY.fromBlock,
+      rapUnlocked: false,
+      rapUsed: false,
+      cypher: null,
     },
   }
 }
@@ -401,7 +406,15 @@ function battleAction(
   }
 
   let result: BattleOutcome
-  if (battle.opening) {
+  if (battle.cypher) {
+    // The crowd is waiting: nothing but a comeback will do.
+    if (action.type !== 'spit') return false
+    result = cypherRound(combat, action.bar)
+  } else if (action.type === 'battleRap') {
+    if (!canBattleRap(battle)) return false
+    startCypher(combat)
+    return true
+  } else if (battle.opening) {
     if (action.type !== 'strike') return false
     if (action.target !== 'brace' && !battle.opening.includes(action.target)) return false
     result = strikeOpening(combat, action.target)

@@ -148,13 +148,15 @@ export interface Enemy extends Combatant {
 export type Effect =
   /**
    * Normal attack(s) against the foe; each hit can dodge and crit.
-   * `pierce` ignores defense. `finisher` multiplies power when the foe is below a share of max HP.
+   * `pierce` ignores defense. `sure` can't be dodged (a diss always lands).
+   * `finisher` multiplies power when the foe is below a share of max HP.
    */
   | {
       type: 'damage'
       power: number
       hits?: number
       pierce?: boolean
+      sure?: boolean
       finisher?: { below: number; mult: number }
     }
   /** Unavoidable damage equal to a share of the foe's max HP, capped. */
@@ -201,7 +203,31 @@ export interface BattleState {
   enemyFled: boolean
   /** Late game: the enemy still has its one free heal for when it first drops low. */
   enemyRally: boolean
+  /** Battle Rap: unlocks the first time the enemy drops below half HP, then stays unlocked. */
+  rapUnlocked: boolean
+  /** Battle Rap is once per fight; spent when the cypher starts. */
+  rapUsed: boolean
+  /** A cypher waiting for the hero's comeback: the enemy's prompt and the pick-mode answer order. */
+  cypher: CypherState | null
 }
+
+export interface CypherState {
+  /** Index into CYPHERS[enemy.kind]. */
+  prompt: number
+  /** The prompt's answer indices in the order pick mode shows them. */
+  answers: number[]
+}
+
+export type CypherTier = 'flop' | 'decent' | 'fire' | 'legendary'
+
+/** The hero's comeback, judged by the UI before it reaches the engine. */
+export type BarResult =
+  /** Typed and judged on the server: rhyme 0-1.4, quality 0-10. */
+  | { kind: 'typed'; text: string; rhyme: number; quality: number; rejected: boolean }
+  /** One of the prompt's three authored answers (index into its `answers`). */
+  | { kind: 'picked'; answer: number }
+  /** The clock ran out with nothing said. */
+  | { kind: 'timeout' }
 
 // ── NPCs ─────────────────────────────────────────────────────────────────────
 
@@ -242,7 +268,7 @@ export type Phase =
   | { kind: 'victory' }
 
 export interface GameState {
-  version: 3
+  version: 4
   rng: RngState
   hero: Hero
   /** Current block of the run; 0 before the first step onto the streets. */
@@ -280,6 +306,10 @@ export type Action =
   | { type: 'leave' }
   /** Learn an offered move; `replace` is required when the hero already knows MAX_MOVES moves. */
   | { type: 'learnMove'; move: MoveId; replace?: MoveId }
+  /** Start a Battle Rap (once per fight, after the enemy has dropped below half HP). */
+  | { type: 'battleRap' }
+  /** Answer the pending cypher. */
+  | { type: 'spit'; bar: BarResult }
   | { type: 'skipLearn' }
 
 // ── Events (what happened, for the UI to narrate and animate) ────────────────
@@ -316,6 +346,8 @@ export type GameEvent =
   | { type: 'levelUp'; level: number }
   | { type: 'moveLearned'; move: MoveId; replaced?: MoveId }
   | { type: 'skillLearned'; skill: SkillId }
+  | { type: 'rapUnlocked' }
+  | { type: 'cypher'; tier: CypherTier }
   | { type: 'locked'; what: 'move'; move: MoveId }
   | { type: 'locked'; what: 'gear'; skill: SkillId }
   /** A fighter ran from the battle. */

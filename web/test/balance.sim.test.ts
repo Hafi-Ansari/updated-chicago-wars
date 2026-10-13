@@ -15,6 +15,7 @@ describe('balance', () => {
     'avg final level': report.avgLevel.toFixed(1),
   })
   console.log('deaths by block:', report.deathsByBlock.join(' '))
+  console.log('battle rap tiers (picking):', report.cyphers)
 
   it('a sensible player wins sometimes, but not always', () => {
     expect(report.winRate).toBeGreaterThan(0.3)
@@ -29,6 +30,22 @@ describe('balance', () => {
   it('a run is roughly a 10-minute session', () => {
     // ~4–6 seconds per action with text and animation → 60–150 actions.
     expect(report.avgActions).toBeGreaterThan(40)
+    expect(report.avgActions).toBeLessThan(150)
+  })
+})
+
+/** Typing instead of picking: the same bands must hold for players who type their bars. */
+describe('balance when typing Battle Rap bars', () => {
+  const report = simulate(1000, 1, { typed: true })
+  console.log(
+    `typed: win rate ${(report.winRate * 100).toFixed(1)}%, rounds/fight ${report.avgRoundsPerFight.toFixed(2)}, actions ${report.avgActions.toFixed(1)}`,
+    report.cyphers,
+  )
+
+  it('stays in the same bands', () => {
+    expect(report.winRate).toBeGreaterThan(0.3)
+    expect(report.winRate).toBeLessThan(0.7)
+    expect(report.avgRoundsPerFight).toBeLessThan(6)
     expect(report.avgActions).toBeLessThan(150)
   })
 })

@@ -4,7 +4,7 @@
  * The balance simulation in test/balance.sim.test.ts checks these values.
  */
 
-import type { BoostableStat, EnemyKind, Stats } from './types'
+import type { BoostableStat, CypherTier, Effect, EnemyKind, Stats } from './types'
 
 // ── Hero ─────────────────────────────────────────────────────────────────────
 
@@ -66,6 +66,39 @@ export const DAZED = { selfHitChance: 0.35, power: 0.4 }
 
 /** Enemies with a `flee` chance may run off once their HP drops below this share. */
 export const ENEMY_FLEE_BELOW = 0.2
+
+// ── Battle Rap ───────────────────────────────────────────────────────────────
+
+/**
+ * Battle Rap: a typed bar's score is `quality × (0.6 + 0.4 × rhyme)`, plus up to +1 for a
+ * multi-syllable rhyme (rhyme above 1). Picked answers score by their tier.
+ */
+export const CYPHER = {
+  /** Unlocks the first time the enemy drops below this share of max HP. */
+  unlockBelow: 0.5,
+  /** Minimum score for each tier; anything lower is a flop. */
+  tiers: { decent: 3, fire: 6, legendary: 8.5 },
+  picked: { flop: 1, decent: 4.5, fire: 7 },
+  /** Quality assumed when the judge couldn't answer, so a rhyme alone tops out at decent. */
+  unjudgedQuality: 5,
+  /** A typed bar is at most two lines of this many characters. */
+  maxLineLength: 90,
+} as const
+
+/** What each tier does. A diss can't be dodged; hyped goes first so it boosts this hit's crit. */
+export const CYPHER_EFFECTS: Readonly<Record<CypherTier, readonly Effect[]>> = {
+  flop: [{ type: 'status', target: 'self', status: 'shook', turns: 2 }],
+  decent: [{ type: 'damage', power: 0.8, sure: true }],
+  fire: [
+    { type: 'damage', power: 1.2, sure: true },
+    { type: 'status', target: 'foe', status: 'shook', turns: 2 },
+  ],
+  legendary: [
+    { type: 'status', target: 'self', status: 'hyped', turns: 1 },
+    { type: 'damage', power: 1.7, sure: true },
+    { type: 'status', target: 'foe', status: 'dazed', turns: 2 },
+  ],
+}
 
 /** Chance per round that the enemy charges recklessly and leaves an opening. */
 export const OPENING_CHANCE = 0.3

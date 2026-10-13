@@ -6,14 +6,18 @@
 import { MOVES } from '../src/content/moves'
 import { SKILLS } from '../src/content/skills'
 import { BLOCKS_PER_RUN, HOT_DOG, MAX_MOVES, trainingPrice } from '../src/engine/balance'
+import { canBattleRap, cypherPrompt } from '../src/engine/combat/cypher'
 import { canUseMove, canUseSkill } from '../src/engine/combat/turn'
 import { type ChoiceView, choicesFor } from '../src/engine/dialogue'
 import { teachableMoves } from '../src/engine/encounters'
+import { createRng, type Rng } from '../src/engine/rng'
 import { newGame, step } from '../src/engine/step'
 import type {
   Action,
+  BarResult,
   BattleState,
   BoostableStat,
+  CypherTier,
   GameState,
   Hero,
   MoveId,
@@ -29,6 +33,39 @@ export interface RunResult {
   fights: number
   battleRounds: number
   level: number
+  cyphers: Record<CypherTier, number>
+}
+
+export interface SimOptions {
+  /** Answer Battle Rap by typing (sampled quality and rhyme) instead of picking. */
+  typed?: boolean
+}
+
+/**
+ * How the bot does at Battle Rap. Picking: a first-time player reading three options.
+ * Typing: quality ~ N(5.5, 2) and a rhyme half the time, a slant a quarter of the time.
+ * Recalibrate both from logged bars once real players have rapped.
+ */
+function botBar(battle: BattleState, rng: Rng, options: SimOptions): BarResult {
+  if (options.typed) {
+    const normal = Math.sqrt(-2 * Math.log(1 - rng.float())) * Math.cos(2 * Math.PI * rng.float())
+    const quality = Math.min(10, Math.max(0, 5.5 + 2 * normal))
+    const rhyme = rng.weighted([
+      { value: 1, weight: 50 },
+      { value: 0.7, weight: 25 },
+      { value: 0, weight: 25 },
+    ])
+    return { kind: 'typed', text: 'bot bar\nbot bar', quality, rhyme, rejected: false }
+  }
+  if (!battle.cypher) return { kind: 'timeout' }
+  const tier = rng.weighted<CypherTier>([
+    { value: 'fire', weight: 55 },
+    { value: 'decent', weight: 35 },
+    { value: 'flop', weight: 10 },
+  ])
+  const prompt = cypherPrompt(battle.enemy.kind, battle.cypher)
+  const answer = prompt.answers.findIndex((a) => a.tier === tier)
+  return { kind: 'picked', answer }
 }
 
 const GEAR_PRIORITY: SkillId[] = [
@@ -130,7 +167,7 @@ function gangstaChoice(state: GameState, npc: NpcInstance, node: string, choices
   return 'leave'
 }
 
-function chooseAction(state: GameState): Action {
+function chooseAction(state: GameState, rng: Rng, options: SimOptions): Action {
   const { phase, hero } = state
   switch (phase.kind) {
     case 'explore': {
@@ -156,6 +193,9 @@ function chooseAction(state: GameState): Action {
     case 'battle': {
       const { battle } = phase
       const enemyRatio = battle.enemy.hp / battle.enemy.stats.maxHp
+      if (battle.cypher) return { type: 'spit', bar: botBar(battle, rng, options) }
+      // Battle Rap as soon as it unlocks: a finisher the bot never saves for later.
+      if (canBattleRap(battle)) return { type: 'battleRap' }
       if (battle.opening) {
         const prefer: OpeningTarget[] =
           enemyRatio <= 0.3 ? ['head', 'torso', 'crotch'] : ['torso', 'crotch', 'legs']
@@ -197,16 +237,19 @@ function chooseAction(state: GameState): Action {
   }
 }
 
-export function simulateRun(seed: number): RunResult {
+export function simulateRun(seed: number, options: SimOptions = {}): RunResult {
   let state = newGame('Bot', seed).state
+  // The bot's own dice, separate from the game's, so its choices don't shift game rolls.
+  const rng = createRng((seed * 2654435761) >>> 0)
   let actions = 0
   let fights = 0
   let battleRounds = 0
+  const cyphers: Record<CypherTier, number> = { flop: 0, decent: 0, fire: 0, legendary: 0 }
   const seenNodes = new Map<string, number>()
 
   while (state.phase.kind !== 'gameOver' && state.phase.kind !== 'victory') {
     if (actions > 3000) throw new Error(`Run ${seed} never ended`)
-    let action = chooseAction(state)
+    let action = chooseAction(state, rng, options)
 
     // Bail out of dialogue loops (e.g. a trade the bot can't afford).
     if (state.phase.kind === 'dialogue') {
@@ -221,14 +264,16 @@ export function simulateRun(seed: number): RunResult {
       }
     }
 
-    const next = step(state, action).state
+    const { state: next, events } = step(state, action)
+    for (const e of events) if (e.type === 'cypher') cyphers[e.tier] += 1
     if (next === state) {
       throw new Error(
         `Bot picked an invalid action ${JSON.stringify(action)} in ${state.phase.kind}`,
       )
     }
     if (state.phase.kind !== 'battle' && next.phase.kind === 'battle') fights += 1
-    if (state.phase.kind === 'battle') battleRounds += 1
+    // Starting a Battle Rap doesn't take a round; answering it does.
+    if (state.phase.kind === 'battle' && action.type !== 'battleRap') battleRounds += 1
     state = next
     actions += 1
   }
@@ -240,6 +285,7 @@ export function simulateRun(seed: number): RunResult {
     fights,
     battleRounds,
     level: state.hero.level,
+    cyphers,
   }
 }
 
@@ -250,10 +296,16 @@ export interface BalanceReport {
   avgRoundsPerFight: number
   avgLevel: number
   deathsByBlock: number[]
+  /** Battle Rap tiers across all runs. */
+  cyphers: Record<CypherTier, number>
 }
 
-export function simulate(runs: number, firstSeed = 1): BalanceReport {
-  const results = Array.from({ length: runs }, (_, i) => simulateRun(firstSeed + i))
+export function simulate(runs: number, firstSeed = 1, options: SimOptions = {}): BalanceReport {
+  const results = Array.from({ length: runs }, (_, i) => simulateRun(firstSeed + i, options))
+  const cyphers: Record<CypherTier, number> = { flop: 0, decent: 0, fire: 0, legendary: 0 }
+  for (const r of results) {
+    for (const tier of Object.keys(cyphers) as CypherTier[]) cyphers[tier] += r.cyphers[tier]
+  }
   const deathsByBlock = Array.from({ length: BLOCKS_PER_RUN + 1 }, () => 0)
   for (const r of results) {
     if (!r.won) deathsByBlock[r.blockReached] = (deathsByBlock[r.blockReached] ?? 0) + 1
@@ -267,5 +319,6 @@ export function simulate(runs: number, firstSeed = 1): BalanceReport {
     avgRoundsPerFight: results.reduce((s, r) => s + r.battleRounds, 0) / Math.max(1, totalFights),
     avgLevel: results.reduce((s, r) => s + r.level, 0) / runs,
     deathsByBlock,
+    cyphers,
   }
 }
