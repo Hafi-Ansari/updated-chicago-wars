@@ -79,6 +79,8 @@ export const CYPHER = {
   /** Minimum score for each tier; anything lower is a flop. */
   tiers: { decent: 3, fire: 6, legendary: 8.5 },
   picked: { flop: 1, decent: 4.5, fire: 7 },
+  /** A typed answer of one line is half a bar, and keeps this share of its score. */
+  halfBar: 0.5,
   /** Quality assumed when the judge couldn't answer, so a rhyme alone tops out at decent. */
   unjudgedQuality: 5,
 } as const

@@ -16,3 +16,8 @@ export function cleanBar(text: string): string {
     .slice(0, 2)
     .join('\n')
 }
+
+/** A bar is two lines; anything less (once cleaned) is half a bar. */
+export function isHalfBar(text: string): boolean {
+  return !cleanBar(text).includes('\n')
+}

@@ -64,11 +64,12 @@ src/ui/        React: plays events back (typewriter, animations), dispatches act
   (`RALLY` in `balance.ts`, lines in `src/content/enemies.ts`).
 - **Battle Rap**: once the enemy drops below half HP, a gold option unlocks under the battle
   menu (once per fight; it stays unlocked after a heal). The enemy spits a bar and the hero has
-  30 seconds to type a comeback (or pick one of three, in Settings). The bar is scored into a tier
-  (flop, decent, fire, legendary) whose effects can't be dodged; a flop gets the hero booed
-  (shook) and the enemy still acts. Prompts and pick-mode answers are in
-  `src/content/cyphers.ts`, scoring in `src/engine/combat/cypher.ts`, tuning in `CYPHER` and
-  `CYPHER_EFFECTS` (`balance.ts`). See [Battle Rap judging](#battle-rap-judging).
+  30 seconds to type a two-line comeback (or pick one of three, in Settings); one line counts as
+  half a bar and scores half. The bar is scored into a tier (flop, decent, fire, legendary) whose
+  effects can't be dodged; a flop gets the hero booed (shook) and the enemy still acts. Prompts
+  and pick-mode answers are in `src/content/cyphers.ts`, scoring in `src/engine/combat/cypher.ts`,
+  tuning in `CYPHER` and `CYPHER_EFFECTS` (`balance.ts`). See
+  [Battle Rap judging](#battle-rap-judging).
 - **Vendors** (Plug, Gangsta, hot dog cart) aren't random encounters. They're recurring
   characters you can visit once per block from the explore menu. Walking only leads to fights
   and street events.

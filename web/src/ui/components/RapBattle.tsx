@@ -11,6 +11,7 @@ import {
   type BattleState,
   cleanBar,
   cypherPrompt,
+  isHalfBar,
   MAX_BAR_LINE_LENGTH,
 } from '../../engine'
 import { sfx } from '../audio/sfx'
@@ -176,7 +177,8 @@ export function RapBattle({ battle, act, input }: RapBattleProps) {
           />
           <div className="rap__row">
             <span className="rap__hint">Enter for line two · Enter again to spit</span>
-            <button type="submit" className="btn btn--gold" disabled={judging || !cleanBar(draft)}>
+            {/* Two lines to spit; a one-line draft still goes in when time runs out, at half. */}
+            <button type="submit" className="btn btn--gold" disabled={judging || isHalfBar(draft)}>
               Spit it
             </button>
           </div>

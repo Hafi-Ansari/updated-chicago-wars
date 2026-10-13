@@ -149,6 +149,20 @@ describe('a cypher', () => {
       `${'x'.repeat(MAX_BAR_LINE_LENGTH)}\nsecond line`,
     )
   })
+
+  it('calls out a one-line bar as half a bar', () => {
+    const started = step(fight(), { type: 'battleRap' }).state
+    const spit = (text: string) =>
+      step(started, {
+        type: 'spit',
+        bar: { kind: 'typed', text, quality: 6.4, rhyme: 1, rejected: false },
+      }).events
+    const half = (text: string) =>
+      spit(text).some((e) => e.type === 'narrate' && e.text.includes('Half a bar'))
+    expect(half("Bro don't trip I don't even drive")).toBe(true)
+    expect(half("Bro don't trip I don't even drive\nI take the bus")).toBe(false)
+    expect(spit('just one line')).toContainEqual({ type: 'cypher', tier: 'decent' })
+  })
 })
 
 describe('bar scoring', () => {
@@ -160,6 +174,19 @@ describe('bar scoring', () => {
     expect(barScore(typed(9, 0), prompt)).toBeCloseTo(5.4)
     expect(barScore(typed(8, 1.4), prompt)).toBeCloseTo(9)
     expect(barScore(typed(5, 1), prompt)).toBe(5)
+  })
+
+  it('scores one line as half a bar', () => {
+    const oneLine = (text: string): BarResult => ({
+      kind: 'typed',
+      text,
+      quality: 6.4,
+      rhyme: 1,
+      rejected: false,
+    })
+    expect(barScore(oneLine("Bro don't trip I don't even drive"), prompt)).toBeCloseTo(3.2)
+    expect(barScore(oneLine('one line\n   \n'), prompt)).toBeCloseTo(3.2)
+    expect(barScore(oneLine('line one\nline two'), prompt)).toBeCloseTo(6.4)
   })
 
   it('treats rejected, empty and malformed bars as flops', () => {

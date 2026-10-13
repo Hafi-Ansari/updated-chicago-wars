@@ -8,7 +8,7 @@
 import { CYPHERS } from '../../content/cyphers'
 import type { CypherPrompt } from '../../content/types'
 import { CYPHER, CYPHER_EFFECTS } from '../balance'
-import { cleanBar } from '../bars'
+import { cleanBar, isHalfBar } from '../bars'
 import { fill } from '../text'
 import type { BarResult, BattleState, CypherState, CypherTier } from '../types'
 import type { CombatContext } from './context'
@@ -53,7 +53,8 @@ const clamp = (value: number, min: number, max: number) =>
 
 /**
  * A bar's score: quality scaled by how well it rhymes (no rhyme keeps 60%), plus up to +1
- * for a multi-syllable rhyme. Picked answers score by their authored tier.
+ * for a multi-syllable rhyme. One line is half a bar and keeps half. Picked answers score by
+ * their authored tier.
  */
 export function barScore(bar: BarResult, prompt: CypherPrompt): number {
   switch (bar.kind) {
@@ -64,10 +65,12 @@ export function barScore(bar: BarResult, prompt: CypherPrompt): number {
       return answer ? CYPHER.picked[answer.tier] : 0
     }
     case 'typed': {
-      if (bar.rejected || !cleanBar(bar.text)) return 0
+      const text = cleanBar(bar.text)
+      if (bar.rejected || !text) return 0
       const quality = clamp(bar.quality, 0, 10)
       const rhyme = clamp(bar.rhyme, 0, 1.4)
-      return quality * (0.6 + 0.4 * Math.min(rhyme, 1)) + Math.max(0, rhyme - 1) * 2.5
+      const score = quality * (0.6 + 0.4 * Math.min(rhyme, 1)) + Math.max(0, rhyme - 1) * 2.5
+      return isHalfBar(text) ? score * CYPHER.halfBar : score
     }
   }
 }
@@ -93,8 +96,13 @@ export function spitBar(ctx: CombatContext, cypher: CypherState, bar: BarResult)
   const say = (text: string) =>
     ctx.emit({ type: 'say', speaker: ctx.hero.name, side: 'hero', text })
 
-  if (bar.kind === 'typed' && cleanBar(bar.text)) say(cleanBar(bar.text))
-  else if (bar.kind === 'picked' && prompt.answers[bar.answer]) {
+  const typed = bar.kind === 'typed' ? cleanBar(bar.text) : ''
+  if (typed) {
+    say(typed)
+    if (isHalfBar(typed)) {
+      ctx.emit({ type: 'narrate', text: `${ctx.hero.name} stops after one line. Half a bar!` })
+    }
+  } else if (bar.kind === 'picked' && prompt.answers[bar.answer]) {
     say(fill(prompt.answers[bar.answer]?.text ?? '', { enemy: ctx.enemy.name }))
   } else {
     ctx.emit({ type: 'narrate', text: `${ctx.hero.name} freezes up. Not a single word comes out.` })
