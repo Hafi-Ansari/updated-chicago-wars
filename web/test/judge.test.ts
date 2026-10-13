@@ -20,7 +20,7 @@ import { CYPHER } from '../src/engine/balance'
 /**
  * A Jev response shaped like the API reference (docs.typesafe.ai/api): scores carry an
  * expected value, confidence, legend and per-level probabilities; nouls a probability.
- * Replace with recorded responses from `npm run eval:judge` once there's a key.
+ * Real responses from `npm run eval:judge` (eval/results/, gitignored) have this same shape.
  */
 function answers(levels: { wit: number; relevance: number; flow: number }, nouls = {}): JevAnswers {
   const scoreAnswer = (value: number) => ({

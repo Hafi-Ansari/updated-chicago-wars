@@ -4,8 +4,8 @@ A turn-based street RPG in the browser: thirteen blocks of Chicago, a King at Th
 pigeon that steals your fries. It's a from-scratch rebuild of the 2020 Java console game in the
 repo root.
 
-Vite + React 19 + TypeScript (strict). A static single-page app with no backend; saves live in
-`localStorage`.
+Vite + React 19 + TypeScript (strict). A static single-page app plus one serverless function
+(the Battle Rap judge); saves live in `localStorage`.
 
 ## Commands
 
@@ -64,11 +64,12 @@ src/ui/        React: plays events back (typewriter, animations), dispatches act
   (`RALLY` in `balance.ts`, lines in `src/content/enemies.ts`).
 - **Battle Rap**: once the enemy drops below half HP, a gold option unlocks under the battle
   menu (once per fight; it stays unlocked after a heal). The enemy spits a bar and the hero has
-  30 seconds to type a two-line comeback (or pick one of three, in Settings); one line counts as
-  half a bar and scores half. The bar is scored into a tier (flop, decent, fire, legendary) whose
-  effects can't be dodged; a flop gets the hero booed (shook) and the enemy still acts. Prompts
-  and pick-mode answers are in `src/content/cyphers.ts`, scoring in `src/engine/combat/cypher.ts`,
-  tuning in `CYPHER` and `CYPHER_EFFECTS` (`balance.ts`). See
+  30 seconds to type a two-line comeback (or pick one of three, in Settings). The rap box frames
+  the lines in battle rap's terms, the setup then the punchline, and Enter moves from one to the
+  other; one line counts as half a bar and scores half. The bar is scored into a tier (flop,
+  decent, fire, legendary) whose effects can't be dodged; a flop gets the hero booed (shook) and
+  the enemy still acts. Prompts and pick-mode answers are in `src/content/cyphers.ts`, scoring in
+  `src/engine/combat/cypher.ts`, tuning in `CYPHER` and `CYPHER_EFFECTS` (`balance.ts`). See
   [Battle Rap judging](#battle-rap-judging).
 - **Vendors** (Plug, Gangsta, hot dog cart) aren't random encounters. They're recurring
   characters you can visit once per block from the explore menu. Walking only leads to fights
@@ -104,32 +105,58 @@ browser. Shared server code lives in `server/`.
    know comes from `server/slang.ts`, then from spelling.
 2. **Everything else, by [Jev](https://docs.typesafe.ai)** (`server/jev.ts`): one request with
    typed questions for wit, relevance, flow, rhymes-by-ear, injection and gibberish. Jev answers
-   with probabilities, not text. If Jev fails (no key, rate limit, timeout), the bar is scored on
-   its rhyme with a neutral quality, which tops out at decent.
+   with probabilities, not text. Failures get one quick retry (408, 429, 5xx, and 499, which Jev
+   returns now and then for a bar it judges fine a moment later). If Jev still fails (no key,
+   rate limit, timeout), the bar is scored on its rhyme with a neutral quality, which tops out at
+   decent.
 3. **Logging** (`server/barLog.ts`): every bar, its rhyme and Jev's answers go to Upstash Redis
    after the response is sent, keeping the latest 100,000. No IP addresses are stored.
 
-The enemy's bar is looked up from game content on the server, never taken from the request. If
-the judge can't be reached, the game switches to pick mode, so the network never costs a turn.
+Jev only judges taste. The game's rules are enforced in code, where they can't be argued with:
+the rhyme check above, and the two-line rule (`isHalfBar` in `src/engine/bars.ts`, applied by
+`barScore` in the engine). The enemy's bar is looked up from game content on the server, never
+taken from the request. If the judge can't be reached, the game switches to pick mode, so the
+network never costs a turn.
 
 **Local dev**: `npm run dev` serves `api/` too (a Vite plugin in `vite.config.ts`). Put
 `TYPESAFE_API_KEY=...` in `.env.local` (gitignored) to judge with Jev; without it bars are
-scored on rhyme alone.
+scored on rhyme alone. `npm test` never sees these keys: the plugin doesn't run under Vitest.
 
 **Evaluating the judge**: `eval/battle-bars.json` holds 40 labeled bars (great, mediocre,
 off-topic, gibberish, injection attempts). `npm run eval:judge` runs them through Jev three times,
-prints agreement, injection and gibberish handling, latency and cost, writes
-`eval/results/<time>.json`, and fails if Jev misses the bar to ship. Run it before changing
-the questions or thresholds. `npm run export:bars` pulls logged bars to label and add.
+measures agreement with the labels, injection and gibberish handling, latency and cost, writes
+the summary and every verdict to `eval/results/<time>.json` (gitignored), and fails if Jev misses
+the bar to ship. Run it before changing the questions, levels, thresholds or quality weights.
+`npm run export:bars` pulls logged bars to label and add.
+
+The first runs (October 2026, `jev-1.13.0`) cleared the bar: 100% of verdicts within one tier of
+the label and 88% exact, every gibberish bar flopped, 22–23 of 24 injection attempts rejected and
+none above decent, p95 latency about 250 ms, about $0.04 per 1,000 battles. What's left to tune:
+
+- Jev is generous to flat but on-topic rhyming bars. Half the "mediocre" labels land in fire,
+  because relevance and flow come out high for any direct answer; wit is the score that tells
+  great from mediocre.
+- The reject thresholds (`JEV_THRESHOLDS`) have room. Honest bars scored at most 0.09 for
+  injection and 0.03 for gibberish, while the weakest true cases scored 0.45 and 0.31 (they still
+  flopped on quality). The labeled set has no slang-heavy honest bars, so lower them only once
+  logged bars show it's safe.
+- The balance sim's typed bars (`botBar` in `test/sim.ts`, quality ~ N(5.5, 2)) run lower than
+  real ones: the great and mediocre eval bars scored 5–9 on quality.
 
 **Setting it up on Vercel** (once):
 
 - Project → Settings → Environment Variables: `TYPESAFE_API_KEY` (from
-  [console.typesafe.ai](https://console.typesafe.ai/keys)). Never prefix it with `VITE_`.
-- Storage → add **Upstash Redis** from the Marketplace and connect it to the project; it sets
-  the connection variables. Without it, bars just aren't logged.
+  [console.typesafe.ai](https://console.typesafe.ai/keys)) for Production and Preview. Never
+  prefix it with `VITE_`.
+- Storage → add **Upstash Redis** from the Marketplace and connect it to the project for the same
+  environments. `server/barLog.ts` reads `KV_REST_API_URL` / `KV_REST_API_TOKEN` (what the
+  Marketplace sets) or `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`; a custom prefix on
+  the connection breaks that. Neither problem fails a request: without the store the
+  `cypher:bars` list just stays empty, and without the key every logged bar says
+  `"judged": false`.
 - Firewall → a rate-limit rule for `/api/judge-bar` (e.g. 20 requests per 60 s per IP).
-  Hobby allows one.
+  Hobby allows one. The game also sends one GET there per session to check the judge is up
+  before offering typing.
 
 ## Art
 
