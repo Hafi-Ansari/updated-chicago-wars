@@ -11,6 +11,7 @@ import { OPENING_ORDER, OPENING_SCENARIOS, OPENINGS } from '../../content/openin
 import { SKILLS } from '../../content/skills'
 import type { EnemyMove } from '../../content/types'
 import {
+  BLINDED_ACCURACY_MULT,
   DAZED,
   FLEE,
   MIN_DAMAGE,
@@ -19,10 +20,11 @@ import {
   SAY_CHANCE,
 } from '../balance'
 import { fill } from '../text'
-import type { Hero, MoveId, OpeningTarget, Side, SkillId, Tone } from '../types'
-import { type CombatContext, fighter } from './context'
+import type { BattleState, Hero, MoveId, OpeningTarget, Side, SkillId, Tone } from '../types'
+import { type CombatContext, fighter, other } from './context'
 import { applyDamage, initiative, mitigation } from './damage'
-import { applyEffects, attack } from './effects'
+import { aimsAtFoe, applyEffects, attack } from './effects'
+import { lockableGear, lockableMoves } from './locks'
 import { clamp, effectiveStats, hasStatus, hpRatio, isDown } from './stats'
 import { beginTurn, endTurn } from './status'
 
@@ -50,14 +52,20 @@ export function outcome(ctx: CombatContext): BattleOutcome {
   return 'ongoing'
 }
 
-export function canUseMove(hero: Hero, move: MoveId): boolean {
+/** Whether the hero can use a move right now: known, PP left, and not locked this fight. */
+export function canUseMove(hero: Hero, move: MoveId, battle?: BattleState): boolean {
   const slot = hero.moves.find((m) => m.id === move)
-  return slot !== undefined && (slot.pp === null || slot.pp > 0)
+  if (!slot || battle?.lockedMoves.includes(move)) return false
+  return slot.pp === null || slot.pp > 0
 }
 
-export function canUseSkill(hero: Hero, skill: SkillId): boolean {
+/** Whether the hero can use gear right now: owned, active, off cooldown, and not taken this fight. */
+export function canUseSkill(hero: Hero, skill: SkillId, battle?: BattleState): boolean {
   const def = SKILLS[skill]
-  return !def.passive && hero.skills.includes(skill) && (hero.cooldowns[skill] ?? 0) <= 0
+  if (def.passive || !hero.skills.includes(skill) || battle?.lockedGear.includes(skill)) {
+    return false
+  }
+  return (hero.cooldowns[skill] ?? 0) <= 0
 }
 
 /** A full round: the hero uses a move or gear, the enemy answers. */
@@ -147,38 +155,66 @@ function heroAct(ctx: CombatContext, action: HeroAction): void {
   const move = MOVES[action.move]
   const slot = ctx.hero.moves.find((m) => m.id === action.move)
   if (slot && slot.pp !== null) slot.pp -= 1
+  ctx.battle.lastMove = action.move
 
   ctx.emit({ type: 'move', user: 'hero', name: move.name })
   if (move.lines.length > 0 && ctx.rng.chance(move.sayChance ?? SAY_CHANCE.heroMove)) {
     say(ctx, 'hero', ctx.pick(`move.${move.id}`, move.lines))
   }
-  if (move.accuracy < 1 && !ctx.rng.chance(move.accuracy)) {
+  const aimed = aimsAtFoe(move.effects)
+  const accuracy = move.accuracy * (aimed ? blindness(ctx, 'hero') : 1)
+  if (accuracy < 1 && !ctx.rng.chance(accuracy)) {
     ctx.emit({ type: 'miss', attacker: 'hero', target: 'enemy', reason: 'miss' })
     return
   }
   applyEffects(ctx, 'hero', move.effects)
 }
 
+/** Accuracy multiplier for a side's attacks (lower while blinded). */
+function blindness(ctx: CombatContext, side: Side): number {
+  return hasStatus(fighter(ctx, side), 'blinded') ? BLINDED_ACCURACY_MULT : 1
+}
+
 function chooseEnemyAction(ctx: CombatContext): EnemyAction {
   const def = ENEMIES[ctx.enemy.kind]
-  const hurt = hpRatio(ctx.enemy) < 0.5
-  const moves = def.moves.filter((m) => !m.whenHurt || hurt)
+  const moves = def.moves.filter((m, i) => available(ctx, m, i))
   return ctx.rng.weighted<EnemyAction>([
     { value: null, weight: def.basicAttackWeight },
     ...moves.map((m) => ({ value: m, weight: m.weight })),
   ])
 }
 
+/** Whether a special move is on the table: HP gate, uses left this fight, and something to lock. */
+function available(ctx: CombatContext, move: EnemyMove, index: number): boolean {
+  const { battle, hero } = ctx
+  if (move.whenBelow !== undefined && hpRatio(ctx.enemy) >= move.whenBelow) return false
+  const uses = battle.enemyMoveUses.filter((i) => i === index).length
+  if (move.maxUses !== undefined && uses >= move.maxUses) return false
+  return move.effects.every(
+    (e) =>
+      (e.type !== 'lockMove' || lockableMoves(hero, battle).length > 0) &&
+      (e.type !== 'lockGear' || lockableGear(hero, battle).length > 0),
+  )
+}
+
 function enemyAct(ctx: CombatContext, action: EnemyAction): void {
-  if (action === null) {
-    attack(ctx, 'enemy')
+  const def = ENEMIES[ctx.enemy.kind]
+  if (action !== null) {
+    ctx.battle.enemyMoveUses.push(def.moves.indexOf(action))
+    if (ctx.rng.chance(SAY_CHANCE.enemyTaunt)) {
+      say(ctx, 'enemy', ctx.pick(`${def.kind}.taunt`, def.taunt))
+    }
+    narrate(ctx, action.text)
+  }
+  // A blinded enemy can whiff anything aimed at the hero, basic attacks included.
+  const aimed = action === null || aimsAtFoe(action.effects)
+  const accuracy = aimed ? blindness(ctx, 'enemy') : 1
+  if (accuracy < 1 && !ctx.rng.chance(accuracy)) {
+    ctx.emit({ type: 'miss', attacker: 'enemy', target: other('enemy'), reason: 'miss' })
     return
   }
-  const def = ENEMIES[ctx.enemy.kind]
-  if (ctx.rng.chance(SAY_CHANCE.enemyTaunt))
-    say(ctx, 'enemy', ctx.pick(`${def.kind}.taunt`, def.taunt))
-  narrate(ctx, action.text)
-  applyEffects(ctx, 'enemy', action.effects)
+  if (action === null) attack(ctx, 'enemy')
+  else applyEffects(ctx, 'enemy', action.effects)
 }
 
 /** Dazed fighters sometimes stumble into their own swing. */

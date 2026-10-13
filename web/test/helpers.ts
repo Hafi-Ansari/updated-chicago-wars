@@ -63,6 +63,16 @@ export function makeCombat(
     run: emptyRunStats(),
     hero,
     enemy,
-    battle: { enemy, round: 0, revealed: false, opening: null, canFlee: true },
+    battle: {
+      enemy,
+      round: 0,
+      revealed: false,
+      opening: null,
+      canFlee: true,
+      lastMove: null,
+      lockedMoves: [],
+      lockedGear: [],
+      enemyMoveUses: [],
+    },
   }
 }

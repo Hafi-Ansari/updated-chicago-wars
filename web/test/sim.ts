@@ -56,7 +56,7 @@ function moveValue(id: MoveId, battle?: BattleState, hero?: Hero): number {
 
 function pickMove(state: GameState, battle: BattleState): Action {
   const { hero } = state
-  const usable = hero.moves.map((m) => m.id).filter((id) => canUseMove(hero, id))
+  const usable = hero.moves.map((m) => m.id).filter((id) => canUseMove(hero, id, battle))
   const hasStatus = (kind: string) => hero.statuses.some((s) => s.kind === kind)
   const enemyHas = (kind: string) => battle.enemy.statuses.some((s) => s.kind === kind)
 
@@ -67,7 +67,7 @@ function pickMove(state: GameState, battle: BattleState): Action {
   if (battle.round <= 1 && usable.includes('talkTrash') && !enemyHas('shook')) {
     return { type: 'useMove', move: 'talkTrash' }
   }
-  const gear = GEAR_PRIORITY.find((s) => canUseSkill(hero, s))
+  const gear = GEAR_PRIORITY.find((s) => canUseSkill(hero, s, battle))
   if (gear) return { type: 'useSkill', skill: gear }
 
   const best = usable.reduce((a, b) =>

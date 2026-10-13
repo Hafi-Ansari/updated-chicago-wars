@@ -362,7 +362,17 @@ function startBattle(state: GameState, enemy: Enemy, canFlee: boolean, ctx: Step
   ctx.emit({ type: 'narrate', text: '[COMBAT ENTERED]', tone: 'info' })
   state.phase = {
     kind: 'battle',
-    battle: { enemy, round: 0, revealed: false, opening: null, canFlee },
+    battle: {
+      enemy,
+      round: 0,
+      revealed: false,
+      opening: null,
+      canFlee,
+      lastMove: null,
+      lockedMoves: [],
+      lockedGear: [],
+      enemyMoveUses: [],
+    },
   }
 }
 
@@ -386,10 +396,10 @@ function battleAction(
     if (action.target !== 'brace' && !battle.opening.includes(action.target)) return false
     result = strikeOpening(combat, action.target)
   } else if (action.type === 'useMove') {
-    if (!canUseMove(state.hero, action.move)) return false
+    if (!canUseMove(state.hero, action.move, battle)) return false
     result = fightRound(combat, { type: 'move', move: action.move })
   } else if (action.type === 'useSkill') {
-    if (!canUseSkill(state.hero, action.skill)) return false
+    if (!canUseSkill(state.hero, action.skill, battle)) return false
     result = fightRound(combat, { type: 'skill', skill: action.skill })
   } else if (action.type === 'flee') {
     if (!battle.canFlee) return false

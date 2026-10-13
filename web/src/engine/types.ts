@@ -64,6 +64,7 @@ export type StatusKind =
   | 'vibing'
   | 'weakened'
   | 'hobbled'
+  | 'blinded'
 
 export type OpeningTarget =
   | 'eyes'
@@ -148,6 +149,14 @@ export type Effect =
   | { type: 'healPct'; pct: number }
   /** The user takes this share of the damage it dealt earlier in the same action. */
   | { type: 'recoil'; pct: number }
+  /** The user heals this share of the damage it dealt earlier in the same action. */
+  | { type: 'drain'; pct: number }
+  /** Locks the hero's last-used move (never Jab) for the rest of the fight. Enemies only. */
+  | { type: 'lockMove' }
+  /** Takes one of the hero's active gear items for the rest of the fight. Enemies only. */
+  | { type: 'lockGear' }
+  /** Pockets some of the foe's clout; an enemy adds it to their reward, so winning gets it back. */
+  | { type: 'stealClout'; min: number; max: number }
   | { type: 'status'; target: 'self' | 'foe'; status: StatusKind; turns: number; chance?: number }
   | { type: 'reveal' }
 
@@ -161,6 +170,13 @@ export interface BattleState {
   /** When set, the enemy left itself open and the hero must pick where to strike. */
   opening: OpeningTarget[] | null
   canFlee: boolean
+  /** The hero's most recent move this fight (what a lockMove targets). */
+  lastMove: MoveId | null
+  /** Moves and gear the enemy has locked for the rest of this fight. */
+  lockedMoves: MoveId[]
+  lockedGear: SkillId[]
+  /** Index into the enemy's `moves` for every special move used, for per-fight limits. */
+  enemyMoveUses: number[]
 }
 
 // ── NPCs ─────────────────────────────────────────────────────────────────────
@@ -272,4 +288,6 @@ export type GameEvent =
   | { type: 'levelUp'; level: number }
   | { type: 'moveLearned'; move: MoveId; replaced?: MoveId }
   | { type: 'skillLearned'; skill: SkillId }
+  | { type: 'locked'; what: 'move'; move: MoveId }
+  | { type: 'locked'; what: 'gear'; skill: SkillId }
   | { type: 'fled' }

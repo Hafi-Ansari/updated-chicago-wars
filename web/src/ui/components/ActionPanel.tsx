@@ -119,9 +119,9 @@ export function ActionPanel({ state, act, onShowStats }: ActionPanelProps) {
                 (slot): MenuOption => ({
                   key: slot.id,
                   label: MOVES[slot.id].name,
-                  sub: ppLabel(slot),
+                  sub: battle.lockedMoves.includes(slot.id) ? 'locked' : ppLabel(slot),
                   hint: MOVES[slot.id].description,
-                  disabled: !canUseMove(hero, slot.id),
+                  disabled: !canUseMove(hero, slot.id, battle),
                   onSelect: () => act({ type: 'useMove', move: slot.id }),
                 }),
               ),
@@ -140,12 +140,13 @@ export function ActionPanel({ state, act, onShowStats }: ActionPanelProps) {
             options={[
               ...owned.map((s): MenuOption => {
                 const cooldown = hero.cooldowns[s] ?? 0
+                const taken = battle.lockedGear.includes(s)
                 return {
                   key: s,
                   label: SKILLS[s].name,
-                  sub: cooldown > 0 ? `ready in ${cooldown}` : 'ready',
+                  sub: taken ? 'taken' : cooldown > 0 ? `ready in ${cooldown}` : 'ready',
                   hint: SKILLS[s].description,
-                  disabled: !canUseSkill(hero, s),
+                  disabled: !canUseSkill(hero, s, battle),
                   onSelect: () => act({ type: 'useSkill', skill: s }),
                 }
               }),

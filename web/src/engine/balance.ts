@@ -53,6 +53,8 @@ export const FROSTBIT_SPD_MULT = 0.5
 export const VIBING_HEAL_PCT = 0.08
 export const WEAKENED_ATK_MULT = 0.65
 export const HOBBLED_SPD_MULT = 0.5
+/** Blinded fighters' attacks connect this much less often. */
+export const BLINDED_ACCURACY_MULT = 0.7
 /** Chance a dazed fighter hurts themselves instead of acting, and how hard. */
 export const DAZED = { selfHitChance: 0.35, power: 0.4 }
 

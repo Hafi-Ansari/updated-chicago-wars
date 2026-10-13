@@ -74,6 +74,8 @@ function animationsFor(
       return { enemy: 'anim-enter' }
     case 'fled':
       return { hero: 'anim-flee' }
+    case 'locked':
+      return { hero: 'anim-locked', enemy: 'anim-lunge' }
     default:
       return {}
   }

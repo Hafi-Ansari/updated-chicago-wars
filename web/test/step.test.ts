@@ -341,6 +341,18 @@ describe('saves', () => {
     expect(step(migrated, { type: 'choose', choice: 'leave' }).state.phase.kind).toBe('explore')
   })
 
+  it('migrates a v2 save made mid-battle and plays on', () => {
+    const battle = firstBattle()
+    if (battle.phase.kind !== 'battle') throw new Error('expected battle')
+    const { lastMove, lockedMoves, lockedGear, enemyMoveUses, ...oldBattle } = battle.phase.battle
+    const { seenMoves: _, ...rest } = battle
+    const v2 = { ...rest, version: 2, movesTaught: 0, phase: { kind: 'battle', battle: oldBattle } }
+    const migrated = migrateSave(JSON.parse(JSON.stringify(v2)))
+    expect(migrated?.phase).toEqual(battle.phase)
+    if (!migrated) return
+    expect(step(migrated, jab).state).not.toBe(migrated)
+  })
+
   it('loads current saves as-is and rejects junk', () => {
     const state = newGame('Tester', 5).state
     expect(migrateSave(JSON.parse(JSON.stringify(state)))).toEqual(state)

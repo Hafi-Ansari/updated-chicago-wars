@@ -18,7 +18,10 @@ export function migrateSave(save: unknown): GameState | null {
   return state.version === SAVE_VERSION ? (state as unknown as GameState) : null
 }
 
-/** v2 → v3: the Gangsta's random lesson and stat offer became a free playbook and fixed training. */
+/**
+ * v2 → v3: the Gangsta's random lesson and stat offer became a free playbook and fixed
+ * training, and battles track enemy locks and per-fight move limits.
+ */
 function fromV2(state: Record<string, unknown>): void {
   const hero = state.hero as { moves: { id: MoveId }[] }
   state.seenMoves = hero.moves.map((m) => m.id)
@@ -29,6 +32,13 @@ function fromV2(state: Record<string, unknown>): void {
   if (npc) {
     delete npc.offer
     delete npc.lesson
+  }
+  if (phase.kind === 'battle') {
+    const battle = phase.battle as Record<string, unknown>
+    battle.lastMove = null
+    battle.lockedMoves = []
+    battle.lockedGear = []
+    battle.enemyMoveUses = []
   }
   if (phase.kind === 'learnMove') {
     // A paid lesson in progress: the move is free now.

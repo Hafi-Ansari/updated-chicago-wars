@@ -64,6 +64,10 @@ const STATUS_TEXT: Record<StatusKind, Record<'applied' | 'expired', [string, str
     applied: ['You are hobbled! (Speed down)', 'X is hobbled! (Speed down)'],
     expired: ['You walked it off.', 'X walked it off.'],
   },
+  blinded: {
+    applied: ["You can't see! (Accuracy down)", "X can't see! (Accuracy down)"],
+    expired: ['Your eyes adjust.', "X's eyes adjust."],
+  },
 }
 
 const who = (side: Side, names: Names, capital = true) =>
@@ -167,6 +171,14 @@ export function describe(event: GameEvent, names: Names): Line | null {
       const skill = SKILLS[event.skill]
       return { text: `You got the ${skill.item}! (${skill.name})`, tone: 'reward' }
     }
+    case 'locked':
+      return {
+        text:
+          event.what === 'move'
+            ? `${MOVES[event.move].name} is locked for the rest of the fight!`
+            : `${names.enemy} took your ${SKILLS[event.skill].name}! It's gone for the rest of the fight.`,
+        tone: 'danger',
+      }
     case 'appear':
     case 'faint':
     case 'fled':

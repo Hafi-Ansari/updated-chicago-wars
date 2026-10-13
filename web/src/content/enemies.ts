@@ -165,6 +165,24 @@ const biker: EnemyDef = {
       text: '{enemy} blasts you with a cloud of exhaust!',
       effects: [{ type: 'status', target: 'foe', status: 'dazed', turns: 2, chance: 0.6 }],
     },
+    {
+      weight: 0.7,
+      text: '{enemy} peels out and sprays a fistful of gravel right in your eyes!',
+      effects: [
+        { type: 'damage', power: 0.8 },
+        { type: 'status', target: 'foe', status: 'blinded', turns: 3 },
+      ],
+    },
+    {
+      weight: 3,
+      whenBelow: 0.35,
+      maxUses: 2,
+      text: '{enemy} takes a long pull from a flask that smells like motor oil. Liquid courage.',
+      effects: [
+        { type: 'healPct', pct: 0.3 },
+        { type: 'status', target: 'self', status: 'pumped', turns: 2 },
+      ],
+    },
   ],
 }
 
@@ -215,6 +233,26 @@ const gangLeader: EnemyDef = {
       weight: 0.6,
       text: 'A bodyguard steps in front of {enemy}.',
       effects: [{ type: 'status', target: 'self', status: 'guarded', turns: 1 }],
+    },
+    {
+      weight: 0.7,
+      text: '{enemy} snaps twice. Two of the crew pin your arms while {enemy} pats you down.',
+      effects: [{ type: 'damage', power: 0.8 }, { type: 'lockGear' }],
+    },
+    {
+      weight: 0.6,
+      text: '{enemy} shakes you down for "street tax." Win, and you can take it back.',
+      effects: [
+        { type: 'damage', power: 0.8 },
+        { type: 'stealClout', min: 6, max: 12 },
+      ],
+    },
+    {
+      weight: 3,
+      whenBelow: 0.35,
+      maxUses: 2,
+      text: '{enemy} whistles for the corner medic, who slaps on a bandage and runs.',
+      effects: [{ type: 'healPct', pct: 0.3 }],
     },
   ],
 }
@@ -270,6 +308,34 @@ const gangRapper: EnemyDef = {
       weight: 0.7,
       text: "{enemy}'s hype man starts screaming ad-libs. The energy is unreal.",
       effects: [{ type: 'status', target: 'self', status: 'hyped', turns: 3 }],
+    },
+    {
+      weight: 0.7,
+      text: "{enemy}'s videographer hits you with a ring light, and {enemy} poses for the shot.",
+      effects: [
+        { type: 'status', target: 'foe', status: 'blinded', turns: 3 },
+        { type: 'status', target: 'self', status: 'hyped', turns: 2 },
+      ],
+    },
+    {
+      weight: 0.6,
+      text: '{enemy} drops a whole verse clowning your last move. It stings, and it sticks.',
+      effects: [{ type: 'damage', power: 0.7 }, { type: 'lockMove' }],
+    },
+    {
+      weight: 0.7,
+      text: '{enemy} jacks your flow, spits it back better, and feeds off the crowd.',
+      effects: [
+        { type: 'damage', power: 1 },
+        { type: 'drain', pct: 0.5 },
+      ],
+    },
+    {
+      weight: 3,
+      whenBelow: 0.35,
+      maxUses: 2,
+      text: '{enemy} sips honey-lemon tea between verses. Vocal rest is self-care.',
+      effects: [{ type: 'healPct', pct: 0.3 }],
     },
   ],
 }
@@ -332,9 +398,22 @@ const boss: EnemyDef = {
     },
     {
       weight: 1,
-      whenHurt: true,
+      whenBelow: 0.5,
       text: 'The clock strikes midnight. {enemy} starts vibing to a beat only they can hear.',
       effects: [{ type: 'status', target: 'self', status: 'vibing', turns: 3 }],
+    },
+    {
+      weight: 0.6,
+      text: "{enemy} flashes a diamond chain under the streetlight. You can't see a thing.",
+      effects: [
+        { type: 'damage', power: 0.7 },
+        { type: 'status', target: 'foe', status: 'blinded', turns: 2 },
+      ],
+    },
+    {
+      weight: 0.5,
+      text: '{enemy} backhands you and issues a royal decree: that move is banned in this city.',
+      effects: [{ type: 'damage', power: 0.7 }, { type: 'lockMove' }],
     },
   ],
 }

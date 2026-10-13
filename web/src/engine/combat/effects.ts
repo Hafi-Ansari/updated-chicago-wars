@@ -11,6 +11,7 @@ import { fill } from '../text'
 import type { Effect, Side } from '../types'
 import { type CombatContext, fighter, other } from './context'
 import { applyDamage, applyHeal, percentDamage, rollAttack } from './damage'
+import { lockableGear, lockableMoves } from './locks'
 import { hasStatus, hpRatio, isDown } from './stats'
 import { applyStatus } from './status'
 
@@ -39,7 +40,17 @@ function isAttack(effect: Effect): boolean {
 
 /** Effects on the foe that ride along with an attack rather than hitting on their own. */
 function isRider(effect: Effect): boolean {
-  return effect.type === 'status' && effect.target === 'foe'
+  return (effect.type === 'status' && effect.target === 'foe') || isSteal(effect)
+}
+
+/** Snatching something off the foe: a lock or a pickpocket. */
+function isSteal(effect: Effect): boolean {
+  return effect.type === 'lockMove' || effect.type === 'lockGear' || effect.type === 'stealClout'
+}
+
+/** Whether a set of effects aims at the foe at all (and so can miss when blinded). */
+export function aimsAtFoe(effects: readonly Effect[]): boolean {
+  return effects.some(targetsFoe)
 }
 
 function targetsFoe(effect: Effect): boolean {
@@ -47,6 +58,8 @@ function targetsFoe(effect: Effect): boolean {
     case 'heal':
     case 'healPct':
     case 'recoil':
+    case 'drain':
+    case 'reveal':
       return false
     case 'status':
       return effect.target === 'foe'
@@ -91,6 +104,31 @@ function applyEffect(ctx: CombatContext, user: Side, effect: Effect, dealtSoFar:
       ctx.emit({ type: 'recoil', target: user, damage, hpAfter })
       return 0
     }
+    case 'drain':
+      if (dealtSoFar > 0) heal(ctx, user, Math.max(1, dealtSoFar * effect.pct))
+      return 0
+    case 'lockMove': {
+      if (user !== 'enemy') return 0
+      const lockable = lockableMoves(ctx.hero, ctx.battle)
+      if (lockable.length === 0) return 0
+      const { lastMove } = ctx.battle
+      const move = lastMove && lockable.includes(lastMove) ? lastMove : ctx.rng.pick(lockable)
+      ctx.battle.lockedMoves.push(move)
+      ctx.emit({ type: 'locked', what: 'move', move })
+      return 0
+    }
+    case 'lockGear': {
+      if (user !== 'enemy') return 0
+      const lockable = lockableGear(ctx.hero, ctx.battle)
+      if (lockable.length === 0) return 0
+      const skill = ctx.rng.pick(lockable)
+      ctx.battle.lockedGear.push(skill)
+      ctx.emit({ type: 'locked', what: 'gear', skill })
+      return 0
+    }
+    case 'stealClout':
+      stealClout(ctx, user, ctx.rng.int(effect.min, effect.max))
+      return 0
     case 'status':
       if (effect.chance === undefined || ctx.rng.chance(effect.chance)) {
         applyStatus(ctx, effect.target === 'self' ? user : target, effect.status, effect.turns)
@@ -147,6 +185,25 @@ function dealDamage(
     })
   }
   return damage
+}
+
+/** Moves clout from the foe to the user. An enemy holds it as extra reward until beaten. */
+function stealClout(ctx: CombatContext, user: Side, amount: number): void {
+  const { hero, enemy } = ctx
+  if (user === 'enemy') {
+    const taken = Math.min(amount, hero.clout)
+    if (taken <= 0) return
+    hero.clout -= taken
+    enemy.cloutReward += taken
+    ctx.emit({ type: 'clout', amount: -taken, total: hero.clout })
+  } else {
+    const taken = Math.min(amount, enemy.cloutReward)
+    if (taken <= 0) return
+    enemy.cloutReward -= taken
+    hero.clout += taken
+    ctx.run.cloutEarned += taken
+    ctx.emit({ type: 'clout', amount: taken, total: hero.clout })
+  }
 }
 
 function heal(ctx: CombatContext, user: Side, amount: number): void {

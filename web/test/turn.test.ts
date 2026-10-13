@@ -231,6 +231,121 @@ describe('openings', () => {
   })
 })
 
+describe('enemy disruption', () => {
+  const lockMove = [{ type: 'lockMove' }] as const
+  const lockGear = [{ type: 'lockGear' }] as const
+
+  it('locks the move the hero used last (never Jab) for the rest of the fight', () => {
+    const hero = makeHero({}, { moves: withMoves('jab', 'haymaker', 'uppercut') })
+    const ctx = makeCombat(hero, makeEnemy({ maxHp: 999 }))
+    fightRound(ctx, { type: 'move', move: 'uppercut' })
+    applyEffects(ctx, 'enemy', lockMove)
+    expect(ctx.battle.lockedMoves).toEqual(['uppercut'])
+    expect(canUseMove(ctx.hero, 'uppercut', ctx.battle)).toBe(false)
+    expect(canUseMove(ctx.hero, 'uppercut')).toBe(true)
+    expect(ctx.events).toContainEqual({ type: 'locked', what: 'move', move: 'uppercut' })
+
+    // Jab can't be locked: after Haymaker goes too, nothing is left to take.
+    ctx.battle.lastMove = 'jab'
+    applyEffects(ctx, 'enemy', lockMove)
+    applyEffects(ctx, 'enemy', lockMove)
+    expect(ctx.battle.lockedMoves.sort()).toEqual(['haymaker', 'uppercut'])
+    expect(canUseMove(ctx.hero, 'jab', ctx.battle)).toBe(true)
+  })
+
+  it('takes one active gear item, never passive gear', () => {
+    const hero = makeHero({}, { skills: ['airpods', 'taser'] })
+    const ctx = makeCombat(hero)
+    applyEffects(ctx, 'enemy', lockGear)
+    expect(ctx.battle.lockedGear).toEqual(['taser'])
+    expect(canUseSkill(ctx.hero, 'taser', ctx.battle)).toBe(false)
+    applyEffects(ctx, 'enemy', lockGear)
+    expect(ctx.battle.lockedGear).toEqual(['taser'])
+  })
+
+  it('a dodged pat-down takes nothing', () => {
+    const shakedown = [{ type: 'damage', power: 1 }, { type: 'lockGear' }] as const
+    for (let seed = 1; seed <= 100; seed++) {
+      const ctx = makeCombat(makeHero({ spd: 999 }, { skills: ['taser'] }), makeEnemy(), seed)
+      applyEffects(ctx, 'enemy', shakedown)
+      const dodged = ctx.events.some((e) => e.type === 'miss')
+      expect(ctx.battle.lockedGear.length).toBe(dodged ? 0 : 1)
+    }
+  })
+
+  it('stolen clout rides on the enemy and comes back with the win', () => {
+    const ctx = makeCombat(makeHero({}, { clout: 20 }), makeEnemy({}, { cloutReward: 10 }))
+    applyEffects(ctx, 'enemy', [{ type: 'stealClout', min: 8, max: 8 }])
+    expect(ctx.hero.clout).toBe(12)
+    expect(ctx.enemy.cloutReward).toBe(18)
+    applyEffects(ctx, 'enemy', [{ type: 'stealClout', min: 50, max: 50 }])
+    expect(ctx.hero.clout).toBe(0)
+  })
+
+  it('drain heals the user by a share of the damage it just dealt, and nothing on a miss', () => {
+    let checked = 0
+    for (let seed = 1; seed <= 40; seed++) {
+      const ctx = makeCombat(makeHero(), makeEnemy({ maxHp: 100, atk: 30 }), seed)
+      ctx.enemy.hp = 50
+      applyEffects(ctx, 'enemy', [
+        { type: 'damage', power: 1 },
+        { type: 'drain', pct: 0.5 },
+      ])
+      const hit = ctx.events.find((e) => e.type === 'hit')
+      const heal = ctx.events.find((e) => e.type === 'heal')
+      if (hit?.type === 'hit') {
+        expect(heal).toMatchObject({ target: 'enemy', amount: Math.round(hit.damage / 2) })
+        checked++
+      } else {
+        expect(heal).toBeUndefined()
+      }
+    }
+    expect(checked).toBeGreaterThan(20)
+  })
+
+  it('blinded heroes miss attacks far more often, but self-buffs never miss', () => {
+    const misses = (blinded: boolean, move: 'jab' | 'hypeUp') => {
+      let count = 0
+      for (let seed = 1; seed <= 400; seed++) {
+        const hero = makeHero({ spd: 999 }, { moves: withMoves('jab', 'hypeUp') })
+        const ctx = makeCombat(hero, makeEnemy({ maxHp: 9999, spd: 0 }), seed)
+        if (blinded) ctx.hero.statuses = [{ kind: 'blinded', turns: 3 }]
+        fightRound(ctx, { type: 'move', move })
+        if (ctx.events.some((e) => e.type === 'miss' && e.attacker === 'hero')) count++
+      }
+      return count / 400
+    }
+    expect(misses(false, 'jab')).toBeLessThan(0.15)
+    expect(misses(true, 'jab')).toBeGreaterThan(0.3)
+    expect(misses(true, 'hypeUp')).toBe(0)
+  })
+
+  it('heals only when low, at most twice a fight', () => {
+    const tea = ENEMIES.gangRapper.moves.findIndex((m) => m.whenBelow !== undefined)
+    expect(ENEMIES.gangRapper.moves[tea]).toMatchObject({ maxUses: 2 })
+    const enemy = makeEnemy({ maxHp: 100, atk: 1 }, { kind: 'gangRapper' })
+    const ctx = makeCombat(makeHero({ maxHp: 9999, atk: 1, def: 999 }), enemy, 3)
+
+    for (let i = 0; i < 20; i++) fightRound(ctx, jab)
+    expect(ctx.battle.enemyMoveUses).not.toContain(tea) // healthy: never heals
+
+    for (let i = 0; i < 60; i++) {
+      ctx.enemy.hp = 20
+      fightRound(ctx, jab)
+    }
+    expect(ctx.battle.enemyMoveUses.filter((i) => i === tea)).toHaveLength(2)
+  })
+
+  it("never wastes a turn trying to take gear the hero doesn't have", () => {
+    const enemy = makeEnemy({ maxHp: 9999, atk: 1 }, { kind: 'gangLeader' })
+    const ctx = makeCombat(makeHero({ maxHp: 9999, def: 999 }), enemy, 4)
+    for (let i = 0; i < 80; i++) fightRound(ctx, jab)
+    expect(ctx.events.some((e) => e.type === 'narrate' && e.text.includes('pats you down'))).toBe(
+      false,
+    )
+  })
+})
+
 describe('fleeRound', () => {
   it('a much faster hero always gets away', () => {
     const ctx = makeCombat(makeHero({ spd: 100 }), makeEnemy({ spd: 0 }))

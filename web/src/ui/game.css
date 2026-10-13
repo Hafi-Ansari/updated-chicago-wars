@@ -460,6 +460,21 @@
   animation: wobble 600ms ease-in-out;
 }
 
+.anim-status--blinded {
+  animation: flash-blind 650ms ease-out;
+}
+
+/* An enemy snatches a move or gear: a quick jolt. */
+.anim-locked {
+  animation: shiver 450ms linear;
+}
+
+@keyframes flash-blind {
+  20% {
+    filter: brightness(2.6) saturate(0.2);
+  }
+}
+
 @keyframes glow-pink {
   50% {
     filter: drop-shadow(0 0 8px var(--accent-2)) brightness(1.2);

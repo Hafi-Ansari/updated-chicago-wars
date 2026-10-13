@@ -41,6 +41,8 @@ function cueFor(event: GameEvent): (() => void) | null {
       return sfx.faint
     case 'fled':
       return sfx.flee
+    case 'locked':
+      return sfx.debuff
     default:
       return null
   }

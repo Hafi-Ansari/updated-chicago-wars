@@ -62,8 +62,10 @@ export interface EnemyMove {
   weight: number
   text: Text
   effects: Effect[]
-  /** Only used when the enemy is below half health (e.g. healing). */
-  whenHurt?: boolean
+  /** Only used while the enemy's HP is below this share of max (e.g. 0.35 for a heal). */
+  whenBelow?: number
+  /** Most times it can be used in one fight. */
+  maxUses?: number
 }
 
 export interface EnemyDef {

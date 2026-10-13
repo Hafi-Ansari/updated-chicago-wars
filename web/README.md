@@ -43,7 +43,13 @@ src/ui/        React: plays events back (typewriter, animations), dispatches act
   they're offered new ones, unseen moves first (higher tiers unlock as they level up, every 2
   wins), and the hero forgets one when full.
   Moves can have accuracy, priority, recoil, armor-piercing and finisher bonuses, and they
-  apply statuses (stunned, bleeding, pumped, shook, hyped, guarded, dazed, frostbit, vibing).
+  apply statuses (stunned, bleeding, pumped, shook, hyped, guarded, dazed, frostbit, vibing,
+  weakened, hobbled, blinded). A status riding on an attack only lands if the attack does.
+- **Enemies** pick weighted moves from `src/content/enemies.ts`. Mid-to-late enemies fight
+  dirty: they blind you (accuracy down), lock your last-used move or take a piece of gear for
+  the rest of the fight (`battle.lockedMoves` / `lockedGear`; Jab can never be locked), pick
+  your pocket (the clout rides on their reward, so winning gets it back), drain HP, and heal
+  when low. Moves can be gated by HP (`whenBelow`) and capped per fight (`maxUses`).
 - **Vendors** (Plug, Gangsta, hot dog cart) aren't random encounters. They're recurring
   characters you can visit once per block from the explore menu. Walking only leads to fights
   and street events.
