@@ -4,6 +4,7 @@ import { HERO_LINES } from '../src/content/hero'
 import { MOVES, STARTING_MOVES } from '../src/content/moves'
 import { NPCS, PLUG_SALE_LINES } from '../src/content/npcs'
 import { SHOP_CATEGORIES, SKILL_ORDER, SKILLS } from '../src/content/skills'
+import type { Effect } from '../src/engine/types'
 
 /**
  * Everyone in Chicago raps (except Goons). A spoken line counts as a bar when
@@ -69,6 +70,30 @@ describe('moves', () => {
       expect(move.accuracy).toBeLessThanOrEqual(1)
       if (move.pp !== null) expect(move.pp).toBeGreaterThan(0)
     }
+  })
+})
+
+describe('disrupt moves', () => {
+  const disrupts = (e: Effect) =>
+    (e.type === 'status' && e.target === 'foe' && e.status === 'blinded') ||
+    e.type === 'lockMove' ||
+    e.type === 'lockGear' ||
+    e.type === 'stealClout' ||
+    e.type === 'drain'
+
+  it('every enemy move that disrupts the hero also hits them', () => {
+    let count = 0
+    for (const def of Object.values(ENEMIES)) {
+      for (const move of def.moves) {
+        if (!move.effects.some(disrupts)) continue
+        count++
+        expect(
+          move.effects.some((e) => e.type === 'damage'),
+          move.text,
+        ).toBe(true)
+      }
+    }
+    expect(count).toBeGreaterThanOrEqual(8)
   })
 })
 

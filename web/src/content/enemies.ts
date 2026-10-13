@@ -200,7 +200,7 @@ const biker: EnemyDef = {
       effects: [{ type: 'status', target: 'foe', status: 'dazed', turns: 2, chance: 0.6 }],
     },
     {
-      weight: 0.7,
+      weight: 1.4,
       text: '{enemy} peels out and sprays a fistful of gravel right in your eyes!',
       effects: [
         { type: 'damage', power: 0.8 },
@@ -269,12 +269,12 @@ const gangLeader: EnemyDef = {
       effects: [{ type: 'status', target: 'self', status: 'guarded', turns: 1 }],
     },
     {
-      weight: 0.7,
+      weight: 1.4,
       text: '{enemy} snaps twice. Two of the crew pin your arms while {enemy} pats you down.',
       effects: [{ type: 'damage', power: 0.8 }, { type: 'lockGear' }],
     },
     {
-      weight: 0.6,
+      weight: 1.3,
       text: '{enemy} shakes you down for "street tax." Win, and you can take it back.',
       effects: [
         { type: 'damage', power: 0.8 },
@@ -344,20 +344,21 @@ const gangRapper: EnemyDef = {
       effects: [{ type: 'status', target: 'self', status: 'hyped', turns: 3 }],
     },
     {
-      weight: 0.7,
-      text: "{enemy}'s videographer hits you with a ring light, and {enemy} poses for the shot.",
+      weight: 1.4,
+      text: "{enemy}'s videographer swings a ring light into your face, and {enemy} poses for the shot.",
       effects: [
+        { type: 'damage', power: 0.6 },
         { type: 'status', target: 'foe', status: 'blinded', turns: 3 },
         { type: 'status', target: 'self', status: 'hyped', turns: 2 },
       ],
     },
     {
-      weight: 0.6,
+      weight: 1.3,
       text: '{enemy} drops a whole verse clowning your last move. It stings, and it sticks.',
       effects: [{ type: 'damage', power: 0.7 }, { type: 'lockMove' }],
     },
     {
-      weight: 0.7,
+      weight: 1.3,
       text: '{enemy} jacks your flow, spits it back better, and feeds off the crowd.',
       effects: [
         { type: 'damage', power: 1 },
@@ -437,7 +438,7 @@ const boss: EnemyDef = {
       effects: [{ type: 'status', target: 'self', status: 'vibing', turns: 3 }],
     },
     {
-      weight: 0.6,
+      weight: 1.1,
       text: "{enemy} flashes a diamond chain under the streetlight. You can't see a thing.",
       effects: [
         { type: 'damage', power: 0.7 },
@@ -445,7 +446,7 @@ const boss: EnemyDef = {
       ],
     },
     {
-      weight: 0.5,
+      weight: 1.0,
       text: '{enemy} backhands you and issues a royal decree: that move is banned in this city.',
       effects: [{ type: 'damage', power: 0.7 }, { type: 'lockMove' }],
     },
