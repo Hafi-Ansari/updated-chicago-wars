@@ -77,6 +77,9 @@ function animationsFor(
       return { [e.target]: e.target === 'hero' ? 'anim-flee' : 'anim-flee-foe' }
     case 'locked':
       return { hero: 'anim-locked', enemy: 'anim-lunge' }
+    case 'cypher':
+      if (e.tier === 'flop') return { hero: 'anim-status anim-status--shook' }
+      return { hero: 'anim-status anim-status--hyped', shake: e.tier === 'legendary' }
     default:
       return {}
   }

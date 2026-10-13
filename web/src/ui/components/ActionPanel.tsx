@@ -10,6 +10,7 @@ import { SHOP_CATEGORIES, SKILL_ORDER, SKILLS } from '../../content/skills'
 import type { SkillCategory } from '../../content/types'
 import {
   type Action,
+  canBattleRap,
   canUseMove,
   canUseSkill,
   choicesFor,
@@ -21,7 +22,9 @@ import {
   type NpcId,
   UNFORGETTABLE_MOVE,
 } from '../../engine'
+import type { RapInput } from '../storage'
 import { Menu, type MenuOption } from './Menu'
+import { RapBattle } from './RapBattle'
 
 interface ActionPanelProps {
   state: GameState
@@ -33,6 +36,8 @@ interface ActionPanelProps {
    */
   shopSection: SkillCategory | null
   onShopSection: (section: SkillCategory | null) => void
+  /** How Battle Rap comebacks are entered (Settings). */
+  rapInput: RapInput
 }
 
 const RISK_LABEL = { safe: 'safe', risky: 'risky', reckless: 'reckless!' } as const
@@ -60,6 +65,7 @@ export function ActionPanel({
   onShowStats,
   shopSection,
   onShopSection,
+  rapInput,
 }: ActionPanelProps) {
   // Which submenu is open; the panel is re-keyed per phase, so this resets between phases.
   const [submenu, setSubmenu] = useState<'moves' | 'gear' | { forgetFor: MoveId } | null>(null)
@@ -98,6 +104,7 @@ export function ActionPanel({
 
     case 'battle': {
       const { battle } = phase
+      if (battle.cypher) return <RapBattle battle={battle} act={act} input={rapInput} />
       if (battle.opening) {
         return (
           <Menu
@@ -197,6 +204,20 @@ export function ActionPanel({
               disabled: !battle.canFlee,
               sub: battle.canFlee ? undefined : 'no escape',
               onSelect: () => act({ type: 'flee' }),
+            },
+            {
+              key: 'rap',
+              label: 'Battle Rap',
+              wide: true,
+              variant: canBattleRap(battle) ? 'gold' : undefined,
+              disabled: !canBattleRap(battle),
+              sub: battle.rapUsed
+                ? 'used'
+                : battle.rapUnlocked
+                  ? 'the mic is yours'
+                  : 'enemy under 50%',
+              hint: 'Spit a comeback bar. Rhyme it and make it hurt: the better the bar, the bigger the hit. Once per fight.',
+              onSelect: () => act({ type: 'battleRap' }),
             },
           ]}
         />

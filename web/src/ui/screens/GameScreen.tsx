@@ -35,6 +35,7 @@ function promptFor(state: GameState): string {
         ? 'The night is young. Hit the streets?'
         : 'The block is quiet... for now.'
     case 'battle':
+      if (state.phase.battle.cypher) return 'Spit your comeback!'
       return state.phase.battle.opening
         ? 'Where do you strike?'
         : `What will ${state.hero.name} do?`
@@ -155,6 +156,7 @@ export function GameScreen({ controller, settings, onSettings }: GameScreenProps
               onShowStats={() => setPanel('stats')}
               shopSection={shopSection}
               onShopSection={setShopSection}
+              rapInput={settings.rapInput}
             />
           )}
         </div>

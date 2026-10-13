@@ -10,6 +10,10 @@ export interface MenuOption {
   hint?: string | undefined
   disabled?: boolean
   primary?: boolean
+  /** Spans every column (Battle Rap under the 2×2 battle grid). */
+  wide?: boolean
+  /** A glowing gold button for something special that just became available. */
+  variant?: 'gold' | undefined
   onSelect: () => void
 }
 
@@ -75,7 +79,14 @@ export function Menu({ options, columns = 1, onBack, label, inlineHints = false 
           <button
             key={option.key}
             type="button"
-            className={`btn ${option.primary ? 'btn--primary' : ''}`}
+            className={[
+              'btn',
+              option.primary ? 'btn--primary' : '',
+              option.wide ? 'btn--wide' : '',
+              option.variant === 'gold' ? 'btn--gold' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
             disabled={option.disabled}
             onClick={() => select(option)}
             onMouseEnter={() => setActive(option.key)}

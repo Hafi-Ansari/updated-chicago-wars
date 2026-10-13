@@ -1323,3 +1323,136 @@
     opacity: 0;
   }
 }
+
+/* ── Battle Rap ────────────────────────────────────────────────────────────── */
+
+/* A full-width option under the 2×2 battle grid. */
+.menu .btn--wide {
+  grid-column: 1 / -1;
+}
+
+/* Gold once Battle Rap unlocks. The glow is static by default; the pulse sits on top,
+   so reduced motion keeps the glow without the movement. */
+.btn--gold {
+  border-color: var(--clout);
+  background: color-mix(in srgb, var(--clout) 16%, var(--surface));
+  color: var(--clout);
+  box-shadow:
+    3px 3px 0 #000,
+    0 0 12px color-mix(in srgb, var(--clout) 70%, transparent);
+  animation: gold-glow 1.6s ease-in-out infinite;
+}
+
+.menu .btn--gold .sub {
+  color: color-mix(in srgb, var(--clout) 80%, var(--text));
+}
+
+@keyframes gold-glow {
+  50% {
+    box-shadow:
+      3px 3px 0 #000,
+      0 0 22px var(--clout);
+  }
+}
+
+.rap {
+  display: grid;
+  gap: 8px;
+}
+
+.rap__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.rap__title {
+  color: var(--clout);
+}
+
+.rap__clock {
+  color: var(--text-dim);
+}
+
+.rap__clock--low {
+  color: var(--danger);
+}
+
+.rap__timer {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-deep);
+  overflow: hidden;
+}
+
+.rap__timer-fill {
+  height: 100%;
+  background: var(--clout);
+  transition: width 200ms linear;
+}
+
+.rap__prompt {
+  margin: 0;
+  padding: 8px 10px;
+  border-left: 3px solid var(--accent-2);
+  background: color-mix(in srgb, var(--accent-2) 8%, transparent);
+  white-space: pre-line;
+  line-height: 1.4;
+}
+
+.rap__form {
+  display: grid;
+  gap: 6px;
+}
+
+.rap__input {
+  width: 100%;
+  min-height: 3.4em;
+  padding: 8px 10px;
+  resize: none;
+  border: 2px solid var(--muted);
+  border-radius: var(--radius);
+  background: var(--bg-deep);
+  color: var(--text);
+  font: inherit;
+  /* 16px+ keeps iOS from zooming the page when the box is focused. */
+  font-size: max(1rem, 16px);
+  line-height: 1.4;
+}
+
+.rap__input:focus {
+  outline: none;
+  border-color: var(--clout);
+}
+
+.rap__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rap__hint,
+.rap__note {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.82rem;
+}
+
+.rap__note--warn {
+  color: var(--clout);
+}
+
+/* Pick-mode comebacks are two-line bars. */
+.rap .btn__label {
+  white-space: pre-line;
+  text-transform: none;
+  letter-spacing: 0;
+  font-family: var(--font-body);
+}
+
+.setting__note {
+  margin: 6px 0 0;
+  color: var(--text-dim);
+  font-size: 0.82rem;
+}

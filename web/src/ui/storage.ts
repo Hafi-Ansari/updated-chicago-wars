@@ -42,12 +42,16 @@ export const writeBest = (score: number) => write(BEST_KEY, score)
 
 export type TextSpeed = 'slow' | 'normal' | 'fast' | 'instant'
 
+/** How Battle Rap comebacks are entered; `auto` picks on touch screens and types elsewhere. */
+export type RapInput = 'auto' | 'type' | 'pick'
+
 export interface Settings {
   textSpeed: TextSpeed
   autoAdvance: boolean
   scanlines: boolean
   music: boolean
   sfx: boolean
+  rapInput: RapInput
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -56,6 +60,7 @@ export const DEFAULT_SETTINGS: Settings = {
   scanlines: false,
   music: true,
   sfx: true,
+  rapInput: 'auto',
 }
 
 export const loadSettings = (): Settings => ({

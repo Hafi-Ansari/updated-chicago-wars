@@ -51,6 +51,12 @@ function cueFor(event: GameEvent): (() => void) | null {
       return sfx.flee
     case 'locked':
       return sfx.debuff
+    case 'rapUnlocked':
+      return sfx.learn
+    case 'cypher':
+      return { flop: sfx.deny, decent: sfx.coin, fire: sfx.buff, legendary: sfx.levelUp }[
+        event.tier
+      ]
     default:
       return null
   }
