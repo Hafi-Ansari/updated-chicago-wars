@@ -30,9 +30,6 @@ interface RapBattleProps {
   input: RapInput
 }
 
-const touchScreen = () =>
-  typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches
-
 /** The word to rhyme with: the last word of the enemy's bar. */
 function rhymeTarget(bar: string): string {
   const words = bar.trim().split(/\s+/)
@@ -50,9 +47,7 @@ function limitDraft(text: string): string {
 
 export function RapBattle({ battle, act, input }: RapBattleProps) {
   const cypher = battle.cypher
-  const [mode, setMode] = useState<Mode>(() =>
-    input === 'pick' || (input === 'auto' && touchScreen()) ? 'pick' : 'checking',
-  )
+  const [mode, setMode] = useState<Mode>(input === 'pick' ? 'pick' : 'checking')
   const [notice, setNotice] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
   const [judging, setJudging] = useState(false)
@@ -171,14 +166,16 @@ export function RapBattle({ battle, act, input }: RapBattleProps) {
               setTimeout(() => field.scrollIntoView({ block: 'center', behavior: 'smooth' }), 300)
             }}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault()
-                void submit(draft)
-              }
+              if (e.key !== 'Enter' || e.nativeEvent.isComposing) return
+              // Enter ends line one, then spits: phone keyboards have no Shift+Enter.
+              const [first = '', second] = draft.split('\n')
+              if (second === undefined && first.trim()) return
+              e.preventDefault()
+              if (second?.trim()) void submit(draft)
             }}
           />
           <div className="rap__row">
-            <span className="rap__hint">Enter to spit · Shift+Enter for line two</span>
+            <span className="rap__hint">Enter for line two · Enter again to spit</span>
             <button type="submit" className="btn btn--gold" disabled={judging || !cleanBar(draft)}>
               Spit it
             </button>

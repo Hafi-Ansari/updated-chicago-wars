@@ -64,7 +64,7 @@ src/ui/        React: plays events back (typewriter, animations), dispatches act
   (`RALLY` in `balance.ts`, lines in `src/content/enemies.ts`).
 - **Battle Rap**: once the enemy drops below half HP, a gold option unlocks under the battle
   menu (once per fight; it stays unlocked after a heal). The enemy spits a bar and the hero has
-  30 seconds to type a comeback, or to pick one of three on phones. The bar is scored into a tier
+  30 seconds to type a comeback (or pick one of three, in Settings). The bar is scored into a tier
   (flop, decent, fire, legendary) whose effects can't be dodged; a flop gets the hero booed
   (shook) and the enemy still acts. Prompts and pick-mode answers are in
   `src/content/cyphers.ts`, scoring in `src/engine/combat/cypher.ts`, tuning in `CYPHER` and

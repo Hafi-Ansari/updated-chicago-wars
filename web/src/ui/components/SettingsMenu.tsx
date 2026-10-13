@@ -10,7 +10,6 @@ interface SettingsMenuProps {
 
 const SPEEDS: TextSpeed[] = ['slow', 'normal', 'fast', 'instant']
 const RAP_INPUTS: { value: RapInput; label: string }[] = [
-  { value: 'auto', label: 'auto' },
   { value: 'type', label: 'type' },
   { value: 'pick', label: 'pick' },
 ]
@@ -52,8 +51,7 @@ export function SettingsMenu({ settings, onChange, onClose, onQuit }: SettingsMe
           ))}
         </div>
         <p className="setting__note">
-          Type your comebacks, or pick from three. Auto picks on touch screens. Bars you type are
-          saved to help tune the judge.
+          Type your comebacks, or pick from three. Bars you type are saved to help tune the judge.
         </p>
       </fieldset>
       <label className="setting setting--toggle">

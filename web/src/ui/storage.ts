@@ -42,8 +42,8 @@ export const writeBest = (score: number) => write(BEST_KEY, score)
 
 export type TextSpeed = 'slow' | 'normal' | 'fast' | 'instant'
 
-/** How Battle Rap comebacks are entered; `auto` picks on touch screens and types elsewhere. */
-export type RapInput = 'auto' | 'type' | 'pick'
+/** How Battle Rap comebacks are entered, on every device. */
+export type RapInput = 'type' | 'pick'
 
 export interface Settings {
   textSpeed: TextSpeed
@@ -60,11 +60,13 @@ export const DEFAULT_SETTINGS: Settings = {
   scanlines: false,
   music: true,
   sfx: true,
-  rapInput: 'auto',
+  rapInput: 'type',
 }
 
-export const loadSettings = (): Settings => ({
-  ...DEFAULT_SETTINGS,
-  ...read<Partial<Settings>>(SETTINGS_KEY),
-})
+export const loadSettings = (): Settings => {
+  const settings = { ...DEFAULT_SETTINGS, ...read<Partial<Settings>>(SETTINGS_KEY) }
+  // An older 'auto' (picking on touch screens) is now typing, like everywhere else.
+  if (settings.rapInput !== 'pick') settings.rapInput = 'type'
+  return settings
+}
 export const writeSettings = (settings: Settings) => write(SETTINGS_KEY, settings)

@@ -1418,6 +1418,15 @@
   /* 16px+ keeps iOS from zooming the page when the box is focused. */
   font-size: max(1rem, 16px);
   line-height: 1.4;
+  /* Grows as the two lines wrap, so the first one never scrolls out of sight on a phone. */
+  field-sizing: content;
+  max-height: calc(7 * 1.4em + 20px);
+}
+
+@supports not (field-sizing: content) {
+  .rap__input {
+    min-height: calc(4 * 1.4em + 20px);
+  }
 }
 
 .rap__input:focus {
@@ -1430,6 +1439,11 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+}
+
+.rap__row .btn {
+  flex: none;
+  white-space: nowrap;
 }
 
 .rap__hint,
