@@ -1,11 +1,12 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { TypeSafeClient } from '@typesafe-ai/sdk'
-import { describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { GET, POST } from '../api/judge-bar'
 import { BAR_LOG_KEY, BAR_LOG_LIMIT, logBar } from '../server/barLog'
 import {
   JEV_QUESTIONS,
+  JEV_RETRY,
   type JevAnswers,
   judgeWithJev,
   sanitizeBar,
@@ -115,7 +116,7 @@ describe('judgeWithJev', () => {
   })
 
   it('falls back to a neutral quality when Jev is rate limited, overloaded or missing', async () => {
-    for (const status of [429, 529, 500]) {
+    for (const status of [429, 499, 529, 500]) {
       const result = await judgeWithJev(
         { enemyBar: thugBar, playerBar: 'a bar', rhymeCheck: 'no rhyme' },
         { client: fakeJev(status, { error: 'nope' }) },
@@ -126,6 +127,29 @@ describe('judgeWithJev', () => {
         rejected: false,
       })
     }
+  })
+
+  it('retries once when Jev cannot complete the request (499)', async () => {
+    const statuses = [499, 200]
+    const flaky = new TypeSafeClient({
+      apiKey: 'test-key',
+      retry: JEV_RETRY,
+      fetch: async () =>
+        new Response(
+          JSON.stringify({
+            model: 'jev-1.13.0',
+            answers: answers({ wit: 3, relevance: 3, flow: 2 }),
+            usage: { input_tokens: 812, output_tokens: 0 },
+          }),
+          { status: statuses.shift() ?? 500, headers: { 'content-type': 'application/json' } },
+        ),
+    })
+    const result = await judgeWithJev(
+      { enemyBar: thugBar, playerBar: 'a bar', rhymeCheck: 'no rhyme' },
+      { client: flaky },
+    )
+    expect(result.judged).toBe(true)
+    expect(statuses).toEqual([])
   })
 
   it('gives up when Jev takes longer than its budget', async () => {
@@ -251,6 +275,16 @@ describe('judgeBar', () => {
 })
 
 describe('the endpoint', () => {
+  // Whatever the shell exports, these never call Jev or write to the real bar log.
+  beforeAll(() => {
+    for (const key of Object.keys(process.env)) {
+      if (/^(TYPESAFE_|UPSTASH_|KV_)/.test(key)) vi.stubEnv(key, undefined)
+    }
+  })
+  afterAll(() => {
+    vi.unstubAllEnvs()
+  })
+
   const post = (body: unknown) =>
     POST(
       new Request('http://localhost/api/judge-bar', { method: 'POST', body: JSON.stringify(body) }),

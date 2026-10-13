@@ -19,6 +19,17 @@ export const JEV_MODEL = 'jev-latest'
 export const JEV_BUDGET_MS = 5000
 /** Probabilities above these reject the bar as an injection attempt or gibberish. */
 export const JEV_THRESHOLDS = { injection: 0.5, gibberish: 0.6 }
+/**
+ * One quick retry, on the SDK's usual statuses (408, 429, 5xx including 529 overloaded) plus
+ * 499: Jev returned "499 Unable to complete this request" once in the eval, for a bar it judged
+ * fine on the next call.
+ */
+export const JEV_RETRY = {
+  maxRetries: 1,
+  backoffInitialMs: 250,
+  backoffMaxMs: 500,
+  httpStatuses: new Set([408, 429, 499, ...Array.from({ length: 100 }, (_, i) => 500 + i)]),
+}
 
 export const JEV_QUESTIONS = {
   wit: score("How clever and funny is the player's comeback, as a reply in a rap battle?", [
@@ -111,8 +122,7 @@ function defaultClient(): TypeSafeClient {
   shared ??= new TypeSafeClient({
     defaultModel: JEV_MODEL,
     timeout: 3000,
-    // One retry for 408, 429 and 5xx (529 overloaded included), backing off briefly.
-    retry: { maxRetries: 1, backoffInitialMs: 250, backoffMaxMs: 500 },
+    retry: JEV_RETRY,
     logLevel: 'error',
   })
   return shared

@@ -13,7 +13,8 @@ const SERVER_ENV = /^(TYPESAFE_|UPSTASH_|KV_)/
 function localApi(): Plugin {
   return {
     name: 'local-api',
-    apply: 'serve',
+    // Not under Vitest (which also serves): tests must never pick up the real keys.
+    apply: (_config, { command }) => command === 'serve' && !process.env.VITEST,
     configureServer(server) {
       const env = loadEnv(server.config.mode, server.config.root, '')
       for (const [key, value] of Object.entries(env)) {
