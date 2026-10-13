@@ -12,7 +12,8 @@ import type {
 
 /**
  * Text may contain placeholders filled at runtime:
- * {hero} {enemy} {npc} {price} {amount} {stat} {move} {movePrice} {item}
+ * {hero} {enemy} {npc} {item} {lessons} (moves in the Gangsta's playbook)
+ * {maxHpPrice} {atkPrice} {defPrice} {spdPrice} {critPrice} (Gangsta training prices)
  * Spoken bars use "\n" between lines.
  */
 export type Text = string
@@ -112,15 +113,18 @@ export type Line = Text | { speaker: 'hero' | 'narrator'; text: Text }
 
 export type Condition =
   | { type: 'clout'; min: number }
-  | { type: 'hasOffer' }
-  | { type: 'canAffordOffer' }
-  | { type: 'hasLesson' }
-  | { type: 'canAffordLesson' }
+  /** The Gangsta's playbook has something to teach. */
+  | { type: 'hasLessons' }
+  | { type: 'canAffordTraining'; stat: BoostableStat }
+  /** The Gangsta hasn't run a training session yet this visit. */
+  | { type: 'notTrainedYet' }
 
 export type NpcEffect =
   | { type: 'clout'; amount: number }
   | { type: 'heal'; pct: number }
-  | { type: 'acceptOffer' }
+  /** Buy a Gangsta training session for this stat at the current price (one per visit). */
+  | { type: 'train'; stat: BoostableStat }
+  /** Open the Gangsta's free playbook (the conversation resumes afterwards). */
   | { type: 'startLesson' }
   | { type: 'ateHotDog' }
   | { type: 'ketchup' }
@@ -130,12 +134,17 @@ export interface DialogueChoice {
   /** Stable key; used to mark one-time choices as spent. */
   key: string
   label: Text
+  /** Short note shown beside the label, e.g. a price. */
+  note?: Text
   require?: Condition
   /** Shown instead of the choice being clickable when `require` fails. */
   lockedHint?: Text
   once?: boolean
   effects?: NpcEffect[]
-  /** Next node, or 'end' to walk away (the NPC says a farewell line). */
+  /**
+   * Next node, or 'end' to walk away (the NPC says a farewell line). With a handoff
+   * effect (openShop, startLesson), the node's lines are spoken before the handoff.
+   */
   next: string | 'end'
 }
 

@@ -37,7 +37,7 @@ const NPC_LABEL: Record<NpcId, string> = {
 
 const NPC_HINT: Record<NpcId, string> = {
   plug: 'Buy hidden gear: passive and active skills for battle.',
-  gangsta: 'Learn new moves, trade clout for stats, or hear a story for clout.',
+  gangsta: 'Relearn moves you passed on or forgot (free), train stats for clout, or hear a story.',
   hotDogVendor: 'Spend clout to heal up between fights.',
 }
 
@@ -189,7 +189,7 @@ export function ActionPanel({ state, act, onShowStats }: ActionPanelProps) {
     }
 
     case 'learnMove': {
-      const { offered, price } = phase
+      const { offered, npc } = phase
       const full = hero.moves.length >= MAX_MOVES
 
       if (submenu !== null && typeof submenu === 'object') {
@@ -218,22 +218,22 @@ export function ActionPanel({ state, act, onShowStats }: ActionPanelProps) {
 
       return (
         <Menu
-          label="Learn a move"
+          label={npc ? 'The playbook' : 'Learn a move'}
+          columns={npc && offered.length > 4 ? 2 : 1}
           options={[
             ...offered.map(
               (id): MenuOption => ({
                 key: id,
                 label: MOVES[id].name,
-                sub: price > 0 ? `${price} clout` : moveSummary(id),
+                sub: moveSummary(id),
                 hint: MOVES[id].description,
-                disabled: hero.clout < price,
                 onSelect: () =>
                   full ? setSubmenu({ forgetFor: id }) : act({ type: 'learnMove', move: id }),
               }),
             ),
             {
               key: 'skip',
-              label: price > 0 ? 'Never mind' : "Don't learn",
+              label: npc ? 'Never mind' : "Don't learn",
               onSelect: () => act({ type: 'skipLearn' }),
             },
           ]}
@@ -248,7 +248,7 @@ export function ActionPanel({ state, act, onShowStats }: ActionPanelProps) {
           options={choicesFor(state, phase.npc, phase.node).map((c) => ({
             key: c.key,
             label: c.label,
-            sub: c.hint,
+            sub: c.hint ?? c.note,
             disabled: c.availability !== 'available',
             onSelect: () => act({ type: 'choose', choice: c.key }),
           }))}

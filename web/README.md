@@ -40,13 +40,17 @@ src/ui/        React: plays events back (typewriter, animations), dispatches act
   ATK × power ± 15%, mitigated by `K / (K + DEF)`, crits ×1.5, minimum 1 damage. HP only changes
   through `applyDamage` and `applyHeal`, which clamp it.
 - **Moves**: the hero carries up to 6 moves with PP (`src/content/moves.ts`). After every win
-  they're offered new ones (higher tiers unlock as they level up, every 2 wins), the Gangsta
-  teaches them for clout, and the hero forgets one when full.
+  they're offered new ones, unseen moves first (higher tiers unlock as they level up, every 2
+  wins), and the hero forgets one when full.
   Moves can have accuracy, priority, recoil, armor-piercing and finisher bonuses, and they
   apply statuses (stunned, bleeding, pumped, shook, hyped, guarded, dazed, frostbit, vibing).
 - **Vendors** (Plug, Gangsta, hot dog cart) aren't random encounters. They're recurring
   characters you can visit once per block from the explore menu. Walking only leads to fights
   and street events.
+- **The Gangsta** keeps a free playbook: any move the hero passed on after a win or forgot to
+  make room (`GameState.seenMoves` minus what they know) can be learned again at no cost, within
+  the 6-move limit. He also runs one training session per visit: a fixed boost to any stat for
+  clout, with every session making the next one pricier (`TRAINING` in `balance.ts`).
 - **Dialogue**: everyone raps except Goons. Lines are pools in `src/content/`, and
   `pickFresh` (`src/engine/lines.ts`) avoids repeating recent picks.
   `test/content.test.ts` checks that every rapper's spoken lines are two-line bars.

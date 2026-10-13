@@ -39,7 +39,14 @@ import {
   fleeRound,
   strikeOpening,
 } from './combat/turn'
-import { applyNpcEffect, choose, enterNode, farewell, type StepContext } from './dialogue'
+import {
+  applyNpcEffect,
+  choose,
+  endLesson,
+  enterNode,
+  farewell,
+  type StepContext,
+} from './dialogue'
 import {
   createBoss,
   createEnemy,
@@ -51,6 +58,7 @@ import {
 } from './encounters'
 import { pickFresh } from './lines'
 import { createRng } from './rng'
+import { SAVE_VERSION } from './save'
 import { fill } from './text'
 import type {
   Action,
@@ -76,7 +84,7 @@ const slotFor = (id: MoveId): MoveSlot => ({ id, pp: MOVES[id].pp })
 export function newGame(heroName: string, seed: number): StepResult {
   const name = heroName.trim() || 'Lil Debug'
   const state: GameState = {
-    version: 2,
+    version: SAVE_VERSION,
     rng: seed >>> 0,
     hero: {
       name,
@@ -95,7 +103,7 @@ export function newGame(heroName: string, seed: number): StepResult {
     visited: [],
     usedNames: [],
     tradesMade: 0,
-    movesTaught: 0,
+    seenMoves: [...STARTING_MOVES],
     recent: {},
     stats: {
       enemiesDefeated: 0,
@@ -176,11 +184,18 @@ function handle(state: GameState, action: Action, ctx: StepContext): boolean {
 
     case 'learnMove':
       if (action.type === 'learnMove') {
-        return learnMove(state, phase.offered, phase.price, action.move, action.replace, ctx)
+        if (!learnMove(state, phase.offered, action.move, action.replace, ctx)) return false
+        if (phase.npc) endLesson(state, phase.npc, true, ctx)
+        else state.phase = { kind: 'explore' }
+        return true
       }
       if (action.type === 'skipLearn') {
-        ctx.emit({ type: 'narrate', text: `${state.hero.name} decided not to learn a new move.` })
-        state.phase = { kind: 'explore' }
+        if (phase.npc) {
+          endLesson(state, phase.npc, false, ctx)
+        } else {
+          ctx.emit({ type: 'narrate', text: `${state.hero.name} decided not to learn a new move.` })
+          state.phase = { kind: 'explore' }
+        }
         return true
       }
       return false
@@ -236,7 +251,7 @@ function walk(state: GameState, ctx: StepContext): void {
 function visit(state: GameState, id: NpcId, ctx: StepContext): boolean {
   if (state.visited.includes(id)) return false
   state.visited.push(id)
-  const npc = createNpc(state, ctx.rng, id)
+  const npc = createNpc(state, id)
   ctx.emit({ type: 'appear', name: npc.name, who: id })
   ctx.emit({ type: 'narrate', text: `You pull up to ${npc.name} the ${NPCS[id].title}.` })
   enterNode(state, npc, NPCS[id].start, ctx)
@@ -269,29 +284,22 @@ function buy(state: GameState, skill: SkillId, plugName: string, ctx: StepContex
 
 // ── Learning moves ───────────────────────────────────────────────────────────
 
+/** Learns one of `offered`, forgetting `replace` when the moveset is full. Returns false if invalid. */
 function learnMove(
   state: GameState,
   offered: MoveId[],
-  price: number,
   move: MoveId,
   replace: MoveId | undefined,
   ctx: StepContext,
 ): boolean {
   const { hero } = state
   if (!offered.includes(move) || hero.moves.some((m) => m.id === move)) return false
-  if (hero.clout < price) return false
 
   const full = hero.moves.length >= MAX_MOVES
   if (replace === UNFORGETTABLE_MOVE) return false
   const replaceIndex = replace ? hero.moves.findIndex((m) => m.id === replace) : -1
   if (full && replaceIndex < 0) return false
 
-  if (price > 0) {
-    hero.clout -= price
-    state.stats.cloutSpent += price
-    state.movesTaught += 1
-    ctx.emit({ type: 'clout', amount: -price, total: hero.clout })
-  }
   if (full) hero.moves[replaceIndex] = slotFor(move)
   else hero.moves.push(slotFor(move))
 
@@ -300,16 +308,24 @@ function learnMove(
       ? { type: 'moveLearned', move, replaced: replace }
       : { type: 'moveLearned', move },
   )
-  state.phase = { kind: 'explore' }
   return true
 }
 
-/** Offers new moves after every win, if there are any left to learn. */
+/**
+ * Offers new moves after every win, if there are any left to learn. Moves the hero
+ * hasn't seen come first: passed-on ones wait in the Gangsta's playbook anyway.
+ */
 function offerMoves(state: GameState, ctx: StepContext): boolean {
   const pool = learnableMoves(state.hero, maxMoveTier(state.hero.level))
   if (pool.length === 0) return false
-  const offered = ctx.rng.sample(pool, MOVES_OFFERED)
-  state.phase = { kind: 'learnMove', offered, price: 0 }
+  const fresh = pool.filter((id) => !state.seenMoves.includes(id))
+  const seen = pool.filter((id) => state.seenMoves.includes(id))
+  const offered = ctx.rng.sample(fresh, MOVES_OFFERED)
+  if (offered.length < MOVES_OFFERED) {
+    offered.push(...ctx.rng.sample(seen, MOVES_OFFERED - offered.length))
+  }
+  for (const id of offered) if (!state.seenMoves.includes(id)) state.seenMoves.push(id)
+  state.phase = { kind: 'learnMove', offered }
   ctx.emit({ type: 'narrate', text: `${state.hero.name} can learn a new move!`, tone: 'info' })
   return true
 }

@@ -42,7 +42,7 @@ function promptFor(state: GameState): string {
     case 'shop':
       return 'What are you copping?'
     case 'learnMove':
-      return state.phase.price > 0 ? 'Ready to train?' : 'Learn a new move?'
+      return state.phase.npc ? 'Which move should we run back?' : 'Learn a new move?'
     case 'gameOver':
     case 'victory':
       return ''

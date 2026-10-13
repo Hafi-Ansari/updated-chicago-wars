@@ -41,6 +41,11 @@ function foeOf(state: GameState): Foe | null {
     case 'dialogue':
     case 'shop':
       return { sprite: phase.npc.id, name: phase.npc.name, subtitle: NPCS[phase.npc.id].title }
+    case 'learnMove':
+      // The Gangsta stays on stage while teaching from the playbook.
+      return phase.npc
+        ? { sprite: phase.npc.id, name: phase.npc.name, subtitle: NPCS[phase.npc.id].title }
+        : null
     default:
       return null
   }

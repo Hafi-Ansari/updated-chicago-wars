@@ -50,7 +50,7 @@ Ids are string unions in `src/engine/types.ts`, and content is typed `Record<Id,
 
 ## Web: gotchas
 
-- **Save format**: `GameState.version` is `2` in three places: the type in `types.ts`, `newGame` in `step.ts`, and `loadSave` plus the `chicago-wars/save/v2` key in `src/ui/storage.ts`. Saves are not migrated, so bump all three together when `GameState` changes shape incompatibly. Old saves are then silently dropped.
+- **Save format**: the game autosaves `GameState` to `localStorage`, and runs in progress on the deployed site should survive updates. When `GameState` changes shape, bump `GameState.version` (`types.ts`) and `SAVE_VERSION`, and add a migration step to `migrateSave` in `src/engine/save.ts` that fills in the new fields (including inside a saved `battle` or `npc`). `loadSave` in `src/ui/storage.ts` runs every save through it; `test/step.test.ts` has migration tests.
 - **Content tests** (`test/content.test.ts`): every spoken line of a character who raps (everyone except Goons, i.e. `rhymes: true`) must be a two-line bar with `\n` between the lines. The hero's battle lines and every move's `lines` must be bars too. Pools have minimum sizes.
 - **Music** is written as text in `src/ui/audio/music.ts`, one 16th note per token. `test/music.test.ts` requires every bar to have exactly 16 tokens, every layer to have the same bar count, and every note to be valid.
 - **Seeded tests**: tests seed the RNG and often loop over seed ranges. Adding, removing or reordering RNG calls (including adding lines to a pool that is `pick`ed) shifts every later roll. That can change seeded outcomes and the balance numbers.

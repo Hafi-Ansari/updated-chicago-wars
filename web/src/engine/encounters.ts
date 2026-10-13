@@ -10,10 +10,7 @@ import {
   type EncounterKind,
   encounterWeights,
   enemyWeights,
-  LESSON,
-  maxMoveTier,
   type Range,
-  TRADE,
 } from './balance'
 import type { Rng } from './rng'
 import type { Enemy, EnemyKind, GameState, Hero, MoveId, NpcId, NpcInstance } from './types'
@@ -84,25 +81,16 @@ export function learnableMoves(hero: Hero, maxTier: number): MoveId[] {
   )
 }
 
+/**
+ * The Gangsta's free playbook: moves the hero has known or been offered but doesn't
+ * know right now (passed on after a win, or forgotten to make room), in menu order.
+ */
+export function teachableMoves(state: GameState): MoveId[] {
+  const known = (id: MoveId) => state.hero.moves.some((m) => m.id === id)
+  return (Object.keys(MOVES) as MoveId[]).filter((id) => state.seenMoves.includes(id) && !known(id))
+}
+
 /** A fresh visit to one of the run's recurring vendors. */
-export function createNpc(state: GameState, rng: Rng, id: NpcId): NpcInstance {
-  const npc: NpcInstance = { id, name: state.npcNames[id], spent: [] }
-  if (id === 'gangsta') {
-    // The Gangsta can teach a little ahead of your level.
-    const lessons = learnableMoves(state.hero, maxMoveTier(state.hero.level + 2))
-    if (lessons.length > 0) {
-      npc.lesson = {
-        move: rng.pick(lessons),
-        price: LESSON.basePrice + state.movesTaught * LESSON.priceStep,
-      }
-    }
-    const stat = rng.pick<keyof typeof TRADE.gains>(['maxHp', 'atk', 'def', 'spd'])
-    const [min, max] = TRADE.gains[stat]
-    npc.offer = {
-      stat,
-      amount: rng.int(min, max),
-      price: TRADE.basePrice + state.tradesMade * TRADE.priceStep,
-    }
-  }
-  return npc
+export function createNpc(state: GameState, id: NpcId): NpcInstance {
+  return { id, name: state.npcNames[id], spent: [] }
 }

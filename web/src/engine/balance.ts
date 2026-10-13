@@ -65,8 +65,8 @@ export const OPENING_TARGETS_OFFERED = 3
 // ── Run structure ────────────────────────────────────────────────────────────
 
 export const BLOCKS_PER_RUN = 12
-/** Enemy stats grow by this fraction per block (block 6 = +30%). */
-export const ENEMY_SCALING_PER_BLOCK = 0.05
+/** Enemy stats grow by this fraction per block (block 6 = +36%). */
+export const ENEMY_SCALING_PER_BLOCK = 0.06
 
 /** What walking to the next block runs into. Vendors are visited by choice, not at random. */
 export type EncounterKind = 'fight' | 'streetEvent'
@@ -151,13 +151,24 @@ export const SAY_CHANCE = {
 }
 
 export const GANGSTA_STORY_CLOUT = 8
-export const LESSON = { basePrice: 25, priceStep: 10 }
-export const TRADE = {
-  basePrice: 15,
-  /** Each trade made this run adds this much to the next price. */
-  priceStep: 8,
-  gains: { maxHp: [8, 12], atk: [2, 4], def: [2, 3], spd: [1, 2] } satisfies Record<string, Range>,
-} as const
+
+/** Gangsta training: a fixed, permanent boost per stat, bought with clout. */
+export const TRAINING = {
+  gains: { maxHp: 10, atk: 2, def: 2, spd: 2, crit: 0.05 },
+  basePrice: { maxHp: 18, atk: 24, def: 18, spd: 15, crit: 20 },
+  /** Every session bought this run adds this much to every price. */
+  priceStep: 10,
+} as const satisfies {
+  gains: Record<BoostableStat, number>
+  basePrice: Record<BoostableStat, number>
+  priceStep: number
+}
+
+/** Menu order for the Gangsta's training. */
+export const TRAINING_ORDER: readonly BoostableStat[] = ['maxHp', 'atk', 'def', 'spd', 'crit']
+
+export const trainingPrice = (stat: BoostableStat, sessions: number): number =>
+  TRAINING.basePrice[stat] + sessions * TRAINING.priceStep
 
 export const HOT_DOG = { price: 12, healPct: 0.4 }
 export const ITALIAN_BEEF = { price: 30, healPct: 1 }

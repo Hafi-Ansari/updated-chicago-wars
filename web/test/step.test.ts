@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { SKILLS } from '../src/content/skills'
-import { MAX_MOVES } from '../src/engine/balance'
+import { MAX_MOVES, TRAINING, trainingPrice } from '../src/engine/balance'
 import { choicesFor } from '../src/engine/dialogue'
+import { teachableMoves } from '../src/engine/encounters'
 import { pickFresh } from '../src/engine/lines'
 import { createRng } from '../src/engine/rng'
+import { migrateSave, SAVE_VERSION } from '../src/engine/save'
 import { newGame, step } from '../src/engine/step'
 import type { GameState } from '../src/engine/types'
 import { withMoves } from './helpers'
@@ -92,6 +94,15 @@ describe('step', () => {
     expect(after.hero.clout).toBeGreaterThan(before.hero.clout)
     expect(after.hero.moves.every((m) => m.pp === null || m.pp > 0)).toBe(true)
   })
+
+  it('win offers show moves the hero has never seen first, and remember them', () => {
+    const before = firstBattle()
+    const seen = ['jab', 'talkTrash', 'twoPiece', 'haymaker', 'bobAndWeave'] as const
+    const after = winBattle({ ...before, seenMoves: [...seen] })
+    if (after.phase.kind !== 'learnMove') throw new Error('expected learnMove')
+    for (const id of after.phase.offered) expect(seen).not.toContain(id)
+    for (const id of after.phase.offered) expect(after.seenMoves).toContain(id)
+  })
 })
 
 describe('vendors', () => {
@@ -118,22 +129,118 @@ describe('vendors', () => {
     expect(step(bought, { type: 'buy', skill: 'taser' }).state).toBe(bought)
   })
 
-  it('the gangsta teaches a move for clout', () => {
+  it("the gangsta's playbook is locked until a move is passed on or forgotten", () => {
     let state = newGame('Tester', 5).state
-    state = { ...state, hero: { ...state.hero, clout: 500 } }
     state = step(state, { type: 'visit', npc: 'gangsta' }).state
     if (state.phase.kind !== 'dialogue') throw new Error('expected dialogue')
-    const lesson = state.phase.npc.lesson
-    expect(lesson).toBeDefined()
-    if (!lesson) return
+    const train = choicesFor(state, state.phase.npc, state.phase.node).find(
+      (c) => c.key === 'train',
+    )
+    expect(train?.availability).toBe('locked')
+    expect(step(state, { type: 'choose', choice: 'train' }).state).toBe(state)
+  })
 
+  it('the gangsta reteaches passed-on and forgotten moves for free, then keeps talking', () => {
+    let state = newGame('Tester', 5).state
+    state = {
+      ...state,
+      hero: { ...state.hero, clout: 7, moves: withMoves('jab', 'haymaker') },
+      // Offered uppercut after a win and passed; forgot Talk Trash to make room for Haymaker.
+      seenMoves: ['jab', 'talkTrash', 'haymaker', 'uppercut'],
+    }
+    state = step(state, { type: 'visit', npc: 'gangsta' }).state
     state = step(state, { type: 'choose', choice: 'train' }).state
-    state = step(state, { type: 'choose', choice: 'learn' }).state
-    expect(state.phase).toMatchObject({ kind: 'learnMove', offered: [lesson.move] })
+    expect(state.phase).toMatchObject({ kind: 'learnMove', offered: ['talkTrash', 'uppercut'] })
 
-    state = step(state, { type: 'learnMove', move: lesson.move }).state
-    expect(state.hero.moves.map((m) => m.id)).toContain(lesson.move)
-    expect(state.hero.clout).toBe(500 - lesson.price)
+    state = step(state, { type: 'learnMove', move: 'uppercut' }).state
+    expect(state.hero.moves.map((m) => m.id)).toEqual(['jab', 'haymaker', 'uppercut'])
+    expect(state.hero.clout).toBe(7)
+    expect(state.phase).toMatchObject({ kind: 'dialogue', node: 'taught' })
+
+    // Skipping goes back to the menu, not out to the street.
+    state = step(state, { type: 'choose', choice: 'train' }).state
+    expect(state.phase).toMatchObject({ kind: 'learnMove', offered: ['talkTrash'] })
+    state = step(state, { type: 'skipLearn' }).state
+    expect(state.phase).toMatchObject({ kind: 'dialogue', node: 'menu' })
+  })
+
+  it('a full moveset forgets one to relearn, and the forgotten move goes in the playbook', () => {
+    let state = newGame('Tester', 5).state
+    const six = withMoves('jab', 'talkTrash', 'haymaker', 'twoPiece', 'uppercut', 'bodegaCat')
+    state = {
+      ...state,
+      hero: { ...state.hero, moves: six },
+      seenMoves: [...six.map((m) => m.id), 'hypeUp'],
+    }
+    state = step(state, { type: 'visit', npc: 'gangsta' }).state
+    state = step(state, { type: 'choose', choice: 'train' }).state
+    expect(step(state, { type: 'learnMove', move: 'hypeUp' }).state).toBe(state)
+    state = step(state, { type: 'learnMove', move: 'hypeUp', replace: 'haymaker' }).state
+    expect(state.hero.moves).toHaveLength(MAX_MOVES)
+    expect(teachableMoves(state)).toEqual(['haymaker'])
+  })
+
+  it('the gangsta runs one training session per visit, and each one raises prices', () => {
+    let state = newGame('Tester', 5).state
+    state = { ...state, hero: { ...state.hero, clout: 200 } }
+    state = step(state, { type: 'visit', npc: 'gangsta' }).state
+    state = step(state, { type: 'choose', choice: 'trade' }).state
+    expect(state.phase).toMatchObject({ kind: 'dialogue', node: 'training' })
+    if (state.phase.kind !== 'dialogue') throw new Error('expected dialogue')
+    const stats = choicesFor(state, state.phase.npc, state.phase.node).filter((c) =>
+      c.key.startsWith('stat-'),
+    )
+    expect(stats.map((c) => c.key)).toEqual([
+      'stat-maxHp',
+      'stat-atk',
+      'stat-def',
+      'stat-spd',
+      'stat-crit',
+    ])
+    expect(stats.find((c) => c.key === 'stat-crit')?.label).toBe('+5% Crit chance')
+
+    const before = state.hero
+    state = step(state, { type: 'choose', choice: 'stat-maxHp' }).state
+    expect(state.hero.stats.maxHp).toBe(before.stats.maxHp + TRAINING.gains.maxHp)
+    expect(state.hero.hp).toBe(before.hp + TRAINING.gains.maxHp)
+    expect(state.hero.clout).toBe(200 - trainingPrice('maxHp', 0))
+    expect(state.tradesMade).toBe(1)
+
+    // Back at the menu, training is locked until the next visit.
+    if (state.phase.kind !== 'dialogue') throw new Error('expected dialogue')
+    const trade = choicesFor(state, state.phase.npc, state.phase.node).find(
+      (c) => c.key === 'trade',
+    )
+    expect(trade).toMatchObject({ availability: 'locked', hint: 'one session per visit' })
+    expect(step(state, { type: 'choose', choice: 'trade' }).state).toBe(state)
+
+    // Next block, a new visit, and every price went up.
+    state = step(state, { type: 'choose', choice: 'leave' }).state
+    state = { ...state, visited: [] }
+    state = step(state, { type: 'visit', npc: 'gangsta' }).state
+    state = step(state, { type: 'choose', choice: 'trade' }).state
+    if (state.phase.kind !== 'dialogue') throw new Error('expected dialogue')
+    const atk = choicesFor(state, state.phase.npc, state.phase.node).find(
+      (c) => c.key === 'stat-atk',
+    )
+    expect(atk?.note).toBe(`${trainingPrice('atk', 1)} clout`)
+    expect(trainingPrice('atk', 1)).toBeGreaterThan(trainingPrice('atk', 0))
+  })
+
+  it("training you can't afford is locked and shows its price", () => {
+    let state = newGame('Tester', 5).state
+    state = { ...state, hero: { ...state.hero, clout: 0 } }
+    state = step(state, { type: 'visit', npc: 'gangsta' }).state
+    state = step(state, { type: 'choose', choice: 'trade' }).state
+    if (state.phase.kind !== 'dialogue') throw new Error('expected dialogue')
+    const crit = choicesFor(state, state.phase.npc, state.phase.node).find(
+      (c) => c.key === 'stat-crit',
+    )
+    expect(crit).toMatchObject({
+      availability: 'locked',
+      hint: `${trainingPrice('crit', 0)} clout`,
+    })
+    expect(step(state, { type: 'choose', choice: 'stat-crit' }).state).toBe(state)
   })
 
   it('learning a seventh move requires forgetting one, and never Jab', () => {
@@ -144,7 +251,7 @@ describe('vendors', () => {
         ...state.hero,
         moves: withMoves('jab', 'talkTrash', 'haymaker', 'twoPiece', 'uppercut', 'bodegaCat'),
       },
-      phase: { kind: 'learnMove', offered: ['hypeUp'], price: 0 },
+      phase: { kind: 'learnMove', offered: ['hypeUp'] },
     }
     expect(step(state, { type: 'learnMove', move: 'hypeUp' }).state).toBe(state)
     expect(step(state, { type: 'learnMove', move: 'hypeUp', replace: 'jab' }).state).toBe(state)
@@ -199,5 +306,46 @@ describe('pickFresh', () => {
       const window = picks.slice(Math.max(0, i - 6), i)
       expect(window).not.toContain(picks[i])
     }
+  })
+})
+
+describe('saves', () => {
+  it('migrates a v2 save mid-conversation with the old Gangsta', () => {
+    const current = newGame('Tester', 5).state
+    const { seenMoves: _, ...rest } = current
+    const v2 = {
+      ...rest,
+      version: 2,
+      movesTaught: 1,
+      phase: {
+        kind: 'dialogue',
+        node: 'offer',
+        npc: {
+          id: 'gangsta',
+          name: 'Big Mike',
+          spent: [],
+          offer: { stat: 'atk', amount: 3, price: 15 },
+        },
+      },
+    }
+    const migrated = migrateSave(JSON.parse(JSON.stringify(v2)))
+    expect(migrated?.version).toBe(SAVE_VERSION)
+    expect(migrated?.seenMoves).toEqual(['jab', 'talkTrash'])
+    expect(migrated?.phase).toEqual({
+      kind: 'dialogue',
+      node: 'menu',
+      npc: { id: 'gangsta', name: 'Big Mike', spent: [] },
+    })
+    // And it plays on from there.
+    if (!migrated) return
+    expect(step(migrated, { type: 'choose', choice: 'leave' }).state.phase.kind).toBe('explore')
+  })
+
+  it('loads current saves as-is and rejects junk', () => {
+    const state = newGame('Tester', 5).state
+    expect(migrateSave(JSON.parse(JSON.stringify(state)))).toEqual(state)
+    expect(migrateSave(null)).toBeNull()
+    expect(migrateSave({ version: 1 })).toBeNull()
+    expect(migrateSave('nope')).toBeNull()
   })
 })

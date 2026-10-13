@@ -165,24 +165,9 @@ export interface BattleState {
 
 // ── NPCs ─────────────────────────────────────────────────────────────────────
 
-export interface TradeOffer {
-  stat: BoostableStat
-  amount: number
-  price: number
-}
-
-export interface Lesson {
-  move: MoveId
-  price: number
-}
-
 export interface NpcInstance {
   id: NpcId
   name: string
-  /** Gangsta stat trade, rolled per visit. */
-  offer?: TradeOffer
-  /** Gangsta move lesson, rolled per visit. */
-  lesson?: Lesson
   /** One-time dialogue choices already used this visit (by choice key). */
   spent: string[]
 }
@@ -206,13 +191,16 @@ export type Phase =
   | { kind: 'battle'; battle: BattleState }
   | { kind: 'dialogue'; npc: NpcInstance; node: string }
   | { kind: 'shop'; npc: NpcInstance }
-  /** Choosing whether to learn one of `offered`; `price` is 0 for level-ups. */
-  | { kind: 'learnMove'; offered: MoveId[]; price: number }
+  /**
+   * Choosing whether to learn one of `offered`: new moves after a win, or the Gangsta's
+   * free playbook when `npc` is set (the conversation picks back up afterwards).
+   */
+  | { kind: 'learnMove'; offered: MoveId[]; npc?: NpcInstance }
   | { kind: 'gameOver' }
   | { kind: 'victory' }
 
 export interface GameState {
-  version: 2
+  version: 3
   rng: RngState
   hero: Hero
   /** Current block of the run; 0 before the first step onto the streets. */
@@ -224,9 +212,13 @@ export interface GameState {
   visited: NpcId[]
   /** Names already used this run, so nobody shows up twice. */
   usedNames: string[]
-  /** Stat trades and lessons bought this run; each makes the next one pricier. */
+  /** Gangsta training sessions bought this run; each makes the next one pricier. */
   tradesMade: number
-  movesTaught: number
+  /**
+   * Every move the hero has known or been offered. The ones they don't know right
+   * now (passed on or forgotten) are the Gangsta's free playbook.
+   */
+  seenMoves: MoveId[]
   /** Recently used line indices per dialogue pool, so lines don't repeat back to back. */
   recent: Record<string, number[]>
   stats: RunStats

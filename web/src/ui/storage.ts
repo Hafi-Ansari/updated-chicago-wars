@@ -3,9 +3,11 @@
  * site data), so every access is wrapped and the game works without it.
  */
 
-import type { GameState } from '../engine'
+import { type GameState, migrateSave } from '../engine'
 
-const SAVE_KEY = 'chicago-wars/save/v2'
+const SAVE_KEY = 'chicago-wars/save'
+/** Where saves lived when the version was part of the key; read once, then cleared. */
+const OLD_SAVE_KEY = 'chicago-wars/save/v2'
 const BEST_KEY = 'chicago-wars/best'
 const SETTINGS_KEY = 'chicago-wars/settings'
 
@@ -27,11 +29,13 @@ function write(key: string, value: unknown): void {
   }
 }
 
-export const loadSave = (): GameState | null => {
-  const save = read<GameState>(SAVE_KEY)
-  return save?.version === 2 ? save : null
+export const loadSave = (): GameState | null =>
+  migrateSave(read<unknown>(SAVE_KEY) ?? read<unknown>(OLD_SAVE_KEY))
+
+export const writeSave = (state: GameState | null) => {
+  write(SAVE_KEY, state)
+  write(OLD_SAVE_KEY, null)
 }
-export const writeSave = (state: GameState | null) => write(SAVE_KEY, state)
 
 export const loadBest = (): number => read<number>(BEST_KEY) ?? 0
 export const writeBest = (score: number) => write(BEST_KEY, score)

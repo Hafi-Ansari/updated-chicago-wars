@@ -1,13 +1,14 @@
 /** NPC conversations: walking the dialogue tree and applying its effects. */
 
-import { MOVES } from '../content/moves'
 import { NPCS } from '../content/npcs'
 import type { Condition, DialogueChoice, Line, NpcEffect } from '../content/types'
 import { assertNever } from './assert'
+import { TRAINING, TRAINING_ORDER, trainingPrice } from './balance'
 import { applyHeal } from './combat/damage'
+import { teachableMoves } from './encounters'
 import type { Picker } from './lines'
 import type { Rng } from './rng'
-import { fill, STAT_LABELS, type TextVars } from './text'
+import { fill, type TextVars } from './text'
 import type { GameEvent, GameState, NpcInstance } from './types'
 
 export interface StepContext {
@@ -19,23 +20,26 @@ export interface StepContext {
 
 export type ChoiceAvailability = 'available' | 'locked' | 'hidden'
 
+/** Marks a visit's training session as used, in NpcInstance.spent. */
+const TRAINED = 'trained'
+
 export interface ChoiceView {
   key: string
   label: string
   availability: ChoiceAvailability
+  /** Why a locked choice is locked. */
   hint?: string
+  note?: string
 }
 
 export function npcVars(state: GameState, npc: NpcInstance): TextVars {
-  return {
+  const vars: Record<string, string | number> = {
     hero: state.hero.name,
     npc: npc.name,
-    price: npc.offer?.price ?? '',
-    amount: npc.offer?.amount ?? '',
-    stat: npc.offer ? STAT_LABELS[npc.offer.stat] : '',
-    move: npc.lesson ? MOVES[npc.lesson.move].name : '',
-    movePrice: npc.lesson?.price ?? '',
+    lessons: teachableMoves(state).length,
   }
+  for (const stat of TRAINING_ORDER) vars[`${stat}Price`] = trainingPrice(stat, state.tradesMade)
+  return vars
 }
 
 /** Enters a node: picks one of its line sets and speaks it. */
@@ -49,8 +53,25 @@ export function enterNode(
   if (!def) throw new Error(`Unknown dialogue node "${node}" for ${npc.id}`)
 
   state.phase = { kind: 'dialogue', npc, node }
+  speakNode(state, npc, node, ctx)
+}
+
+/** Speaks one of a node's line sets without entering it. */
+function speakNode(state: GameState, npc: NpcInstance, node: string, ctx: StepContext): void {
+  const def = NPCS[npc.id].nodes[node]
+  if (!def) throw new Error(`Unknown dialogue node "${node}" for ${npc.id}`)
   const vars = npcVars(state, npc)
   for (const line of ctx.pick(`${npc.id}.${node}`, def.lines)) speak(state, npc, line, vars, ctx)
+}
+
+/** After the Gangsta's playbook: back to the conversation, reacting to whether they learned. */
+export function endLesson(
+  state: GameState,
+  npc: NpcInstance,
+  learned: boolean,
+  ctx: StepContext,
+): void {
+  enterNode(state, npc, learned ? 'taught' : 'menu', ctx)
 }
 
 /** The choices for the current node, as the UI should show them. */
@@ -64,6 +85,7 @@ export function choicesFor(state: GameState, npc: NpcInstance, node: string): Ch
       const availability = availabilityOf(state, npc, choice)
       const view: ChoiceView = { key: choice.key, label: fill(choice.label, vars), availability }
       if (availability === 'locked' && choice.lockedHint) view.hint = fill(choice.lockedHint, vars)
+      if (choice.note) view.note = fill(choice.note, vars)
       return view
     })
     .filter((view) => view.availability !== 'hidden')
@@ -88,10 +110,11 @@ export function choose(
     else applyNpcEffect(state, npc, effect, ctx)
   }
 
+  if (handoff !== null && choice.next !== 'end') speakNode(state, npc, choice.next, ctx)
   if (handoff === 'shop') {
     state.phase = { kind: 'shop', npc }
-  } else if (handoff === 'lesson' && npc.lesson) {
-    state.phase = { kind: 'learnMove', offered: [npc.lesson.move], price: npc.lesson.price }
+  } else if (handoff === 'lesson') {
+    state.phase = { kind: 'learnMove', offered: teachableMoves(state), npc }
   } else if (choice.next === 'end') {
     farewell(state, npc, ctx)
   } else {
@@ -130,17 +153,18 @@ export function applyNpcEffect(
       ctx.emit({ type: 'heal', target: 'hero', amount, hpAfter: hero.hp })
       return
     }
-    case 'acceptOffer': {
-      const offer = npc?.offer
-      if (!offer || hero.clout < offer.price) return
-      hero.clout -= offer.price
-      stats.cloutSpent += offer.price
-      hero.stats[offer.stat] += offer.amount
-      if (offer.stat === 'maxHp') hero.hp += offer.amount
+    case 'train': {
+      const price = trainingPrice(effect.stat, state.tradesMade)
+      if (hero.clout < price) return
+      const amount = TRAINING.gains[effect.stat]
+      hero.clout -= price
+      stats.cloutSpent += price
+      hero.stats[effect.stat] += amount
+      if (effect.stat === 'maxHp') hero.hp += amount
       state.tradesMade += 1
-      delete npc.offer
-      ctx.emit({ type: 'clout', amount: -offer.price, total: hero.clout })
-      ctx.emit({ type: 'statUp', stat: offer.stat, amount: offer.amount })
+      npc?.spent.push(TRAINED)
+      ctx.emit({ type: 'clout', amount: -price, total: hero.clout })
+      ctx.emit({ type: 'statUp', stat: effect.stat, amount })
       return
     }
     case 'ateHotDog':
@@ -168,14 +192,14 @@ function meets(state: GameState, npc: NpcInstance, condition: Condition): Choice
   switch (condition.type) {
     case 'clout':
       return state.hero.clout >= condition.min ? 'available' : 'locked'
-    case 'hasOffer':
-      return npc.offer ? 'available' : 'hidden'
-    case 'canAffordOffer':
-      return npc.offer && state.hero.clout >= npc.offer.price ? 'available' : 'locked'
-    case 'hasLesson':
-      return npc.lesson ? 'available' : 'hidden'
-    case 'canAffordLesson':
-      return npc.lesson && state.hero.clout >= npc.lesson.price ? 'available' : 'locked'
+    case 'hasLessons':
+      return teachableMoves(state).length > 0 ? 'available' : 'locked'
+    case 'canAffordTraining':
+      return state.hero.clout >= trainingPrice(condition.stat, state.tradesMade)
+        ? 'available'
+        : 'locked'
+    case 'notTrainedYet':
+      return npc.spent.includes(TRAINED) ? 'locked' : 'available'
     default:
       return assertNever(condition)
   }

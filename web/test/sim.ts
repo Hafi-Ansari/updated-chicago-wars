@@ -5,16 +5,19 @@
 
 import { MOVES } from '../src/content/moves'
 import { SKILLS } from '../src/content/skills'
-import { BLOCKS_PER_RUN, HOT_DOG, MAX_MOVES } from '../src/engine/balance'
+import { BLOCKS_PER_RUN, HOT_DOG, MAX_MOVES, trainingPrice } from '../src/engine/balance'
 import { canUseMove, canUseSkill } from '../src/engine/combat/turn'
-import { choicesFor } from '../src/engine/dialogue'
+import { type ChoiceView, choicesFor } from '../src/engine/dialogue'
+import { teachableMoves } from '../src/engine/encounters'
 import { newGame, step } from '../src/engine/step'
 import type {
   Action,
   BattleState,
+  BoostableStat,
   GameState,
   Hero,
   MoveId,
+  NpcInstance,
   OpeningTarget,
   SkillId,
 } from '../src/engine/types'
@@ -30,6 +33,9 @@ export interface RunResult {
 
 const GEAR_PRIORITY: SkillId[] = ['glock', 'durag', 'taser', 'aviators']
 const SHOP_PRIORITY: SkillId[] = ['taser', 'durag', 'glock', 'aviators', 'airpods']
+const TRAINING_PRIORITY: BoostableStat[] = ['atk', 'maxHp', 'def', 'spd']
+/** Clout the bot keeps back after training, for hot dogs and gear. */
+const TRAINING_RESERVE = 15
 
 /** Rough value of a move for this bot: expected damage, with bonuses for utility. */
 function moveValue(id: MoveId, battle?: BattleState, hero?: Hero): number {
@@ -70,6 +76,42 @@ function pickMove(state: GameState, battle: BattleState): Action {
   return { type: 'useMove', move: best }
 }
 
+/** The learn decision for a list of moves: the best one, and what to forget for it if full. */
+function learnChoice(hero: Hero, offered: MoveId[]): Action | null {
+  if (offered.length === 0) return null
+  const best = offered.reduce((a, b) => (moveValue(b) > moveValue(a) ? b : a))
+  if (hero.moves.length < MAX_MOVES) return { type: 'learnMove', move: best }
+  const worst = hero.moves
+    .map((m) => m.id)
+    .filter((id) => id !== 'jab')
+    .reduce((a, b) => (moveValue(b) < moveValue(a) ? b : a))
+  return moveValue(best) > moveValue(worst)
+    ? { type: 'learnMove', move: best, replace: worst }
+    : null
+}
+
+function affordableTraining(state: GameState, npc: NpcInstance): BoostableStat | undefined {
+  if (npc.spent.includes('trained')) return undefined
+  return TRAINING_PRIORITY.find(
+    (stat) => state.hero.clout - trainingPrice(stat, state.tradesMade) >= TRAINING_RESERVE,
+  )
+}
+
+function gangstaChoice(state: GameState, npc: NpcInstance, node: string, choices: ChoiceView[]) {
+  const has = (key: string) => choices.some((c) => c.key === key)
+  if (node === 'story') return 'back'
+  if (node === 'training') {
+    const stat = affordableTraining(state, npc)
+    return stat ? `stat-${stat}` : 'back'
+  }
+  if (has('story')) return 'story'
+  if (has('train') && node !== 'taught' && learnChoice(state.hero, teachableMoves(state))) {
+    return 'train'
+  }
+  if (has('trade') && affordableTraining(state, npc)) return 'trade'
+  return 'leave'
+}
+
 function chooseAction(state: GameState): Action {
   const { phase, hero } = state
   switch (phase.kind) {
@@ -79,7 +121,10 @@ function chooseAction(state: GameState): Action {
         (s) => !hero.skills.includes(s) && hero.clout >= SKILLS[s].price,
       )
       if (!visited('plug') && wantsGear) return { type: 'visit', npc: 'plug' }
-      if (!visited('gangsta') && hero.clout >= 25) return { type: 'visit', npc: 'gangsta' }
+      const wantsGangsta =
+        hero.clout >= trainingPrice('spd', state.tradesMade) + TRAINING_RESERVE ||
+        learnChoice(hero, teachableMoves(state)) !== null
+      if (!visited('gangsta') && wantsGangsta) return { type: 'visit', npc: 'gangsta' }
       if (
         !visited('hotDogVendor') &&
         hero.hp / hero.stats.maxHp < 0.6 &&
@@ -104,37 +149,18 @@ function chooseAction(state: GameState): Action {
       return pickMove(state, battle)
     }
 
-    case 'learnMove': {
-      const best = phase.offered.reduce((a, b) => (moveValue(b) > moveValue(a) ? b : a))
-      if (hero.clout < phase.price) return { type: 'skipLearn' }
-      if (hero.moves.length < MAX_MOVES) return { type: 'learnMove', move: best }
-      const worst = hero.moves
-        .map((m) => m.id)
-        .filter((id) => id !== 'jab')
-        .reduce((a, b) => (moveValue(b) < moveValue(a) ? b : a))
-      return moveValue(best) > moveValue(worst)
-        ? { type: 'learnMove', move: best, replace: worst }
-        : { type: 'skipLearn' }
-    }
+    case 'learnMove':
+      return learnChoice(hero, phase.offered) ?? { type: 'skipLearn' }
 
     case 'dialogue': {
       const choices = choicesFor(state, phase.npc, phase.node).filter(
         (c) => c.availability === 'available',
       )
+      if (phase.npc.id === 'gangsta') {
+        return { type: 'choose', choice: gangstaChoice(state, phase.npc, phase.node, choices) }
+      }
       const hurt = hero.hp / hero.stats.maxHp < 0.6
-      const lesson = phase.npc.lesson
-      const wantsLesson = lesson !== undefined && moveValue(lesson.move) > 0.9
-      const order = [
-        'story',
-        ...(wantsLesson ? ['train', 'learn'] : []),
-        'trade',
-        'accept',
-        'browse',
-        ...(hurt ? ['beef', 'dog'] : []),
-        'back',
-        'decline',
-        'leave',
-      ]
+      const order = ['browse', ...(hurt ? ['beef', 'dog'] : []), 'back', 'decline', 'leave']
       const key = order.find((k) => choices.some((c) => c.key === k)) ?? choices[0]?.key
       if (!key) throw new Error(`Dead-end dialogue at ${phase.npc.id}/${phase.node}`)
       return { type: 'choose', choice: key }

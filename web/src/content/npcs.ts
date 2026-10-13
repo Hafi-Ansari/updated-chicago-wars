@@ -3,8 +3,15 @@
  * pool of line sets; one set is picked per visit, avoiding recent repeats.
  */
 
-import { GANGSTA_STORY_CLOUT, HOT_DOG, ITALIAN_BEEF } from '../engine/balance'
-import type { NpcId } from '../engine/types'
+import {
+  GANGSTA_STORY_CLOUT,
+  HOT_DOG,
+  ITALIAN_BEEF,
+  TRAINING,
+  TRAINING_ORDER,
+} from '../engine/balance'
+import { STAT_LABELS } from '../engine/text'
+import type { BoostableStat, NpcId } from '../engine/types'
 import type { DialogueChoice, NpcDef } from './types'
 
 const gangstaMenu: DialogueChoice[] = [
@@ -17,12 +24,41 @@ const gangstaMenu: DialogueChoice[] = [
   },
   {
     key: 'train',
-    label: 'Teach me {move} ({movePrice} clout)',
-    require: { type: 'hasLesson' },
+    label: 'Teach me a move',
+    note: 'free · {lessons} in the playbook',
+    require: { type: 'hasLessons' },
+    lockedHint: 'pass on or forget a move first',
+    effects: [{ type: 'startLesson' }],
     next: 'lesson',
   },
-  { key: 'trade', label: 'Ask about a stat trade', require: { type: 'hasOffer' }, next: 'offer' },
+  {
+    key: 'trade',
+    label: 'Work on my stats',
+    note: 'costs clout',
+    require: { type: 'notTrainedYet' },
+    lockedHint: 'one session per visit',
+    next: 'training',
+  },
   { key: 'leave', label: 'Bounce', next: 'end' },
+]
+
+const gain = (stat: BoostableStat) =>
+  stat === 'crit' ? `+${Math.round(TRAINING.gains.crit * 100)}%` : `+${TRAINING.gains[stat]}`
+
+/** One session per visit; every session bought this run raises all prices. */
+const trainingChoices: DialogueChoice[] = [
+  ...TRAINING_ORDER.map(
+    (stat): DialogueChoice => ({
+      key: `stat-${stat}`,
+      label: `${gain(stat)} ${STAT_LABELS[stat]}`,
+      note: `{${stat}Price} clout`,
+      require: { type: 'canAffordTraining', stat },
+      lockedHint: `{${stat}Price} clout`,
+      effects: [{ type: 'train', stat }],
+      next: 'trained',
+    }),
+  ),
+  { key: 'back', label: "That's enough for now", next: 'menu' },
 ]
 
 const gangsta: NpcDef = {
@@ -101,46 +137,34 @@ const gangsta: NpcDef = {
     lesson: {
       lines: [
         [
-          "I can teach you {move}, it's a classic,\n{movePrice} clout and your fighting gets drastic.",
+          'Every move you passed on, every move you dropped,\nI wrote it in my playbook, and the lessons never stopped.',
         ],
-        ["{move}? Straight out the vault,\n{movePrice} clout, and if you lose, that's your fault."],
-        ["Ah, {move}. My signature, rook.\n{movePrice} clout, and it's yours, by the book."],
+        [
+          "This one's on the house, I don't charge my own,\npick a page, rook, and make that move your own.",
+        ],
+        ['Run it back? Say less, I keep receipts,\nevery move you ever saw out on these streets.'],
       ],
-      choices: [
-        {
-          key: 'learn',
-          label: "Bet, let's train ({movePrice} clout)",
-          require: { type: 'canAffordLesson' },
-          lockedHint: '...you broke, rook. Come back with clout.',
-          effects: [{ type: 'startLesson' }],
-          next: 'end',
-        },
-        { key: 'decline', label: 'Maybe later', next: 'menu' },
-      ],
+      choices: gangstaMenu,
     },
-    offer: {
+    taught: {
       lines: [
-        ["I can hook you up with +{amount} {stat},\n{price} clout and it's yours, simple as that."],
-        [
-          "Got a little something for your {stat}, rook,\n+{amount} for {price} clout, that's all it took.",
-        ],
-        [
-          "Tell you what, {price} clout's all I need,\nand I'll boost your {stat} +{amount}, guaranteed.",
-        ],
+        ["There it is, you got it down cold,\nthat move's yours again, it never gets old."],
+        ['Muscle memory, rook, it comes right back,\nlike riding a bike down the Lakefront track.'],
+        ['See? Told you it was all in your hands,\nnow go show the block you understand.'],
       ],
-      choices: [
-        {
-          key: 'accept',
-          label: 'Bet. (Pay {price} clout)',
-          require: { type: 'canAffordOffer' },
-          lockedHint: '...wait, no, you broke. Get more clout, yo!',
-          effects: [{ type: 'acceptOffer' }],
-          next: 'traded',
-        },
-        { key: 'decline', label: 'Nah', next: 'menu' },
-      ],
+      choices: gangstaMenu,
     },
-    traded: {
+    training: {
+      lines: [
+        ["Pick your poison, what you tryna build?\nHeart, hands, or feet, I'll get you skilled."],
+        ["Gym's open, rook, this corner's my weights,\npick a stat and I'll set you straight."],
+        [
+          "Every session costs, that's just how it goes,\nthe more that you train, the higher it grows.",
+        ],
+      ],
+      choices: trainingChoices,
+    },
+    trained: {
       lines: [
         [
           "Pleasure doing business, now go get it done,\nand tell 'em who trained you when you're number one.",
