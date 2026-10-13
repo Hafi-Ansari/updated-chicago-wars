@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ENEMIES } from '../src/content/enemies'
+import { ENEMIES, RALLY_LINES } from '../src/content/enemies'
 import { MOVES } from '../src/content/moves'
 import { OPENING_SCENARIOS, OPENINGS } from '../src/content/openings'
 import { SKILLS } from '../src/content/skills'
@@ -458,6 +458,75 @@ describe('elite gear', () => {
     expect(ctx.events[train + 1]).toMatchObject({ type: 'hit', target: 'enemy', damage: 40 })
     expect(ctx.events.some((e) => e.type === 'hit' && e.attacker === 'enemy')).toBe(false)
     expect(ctx.enemy.statuses.map((s) => s.kind)).not.toContain('incoming')
+  })
+})
+
+describe('late-game rally', () => {
+  const setup = (rally: boolean, seed = 1) => {
+    const hero = makeHero({ atk: 12, def: 999, maxHp: 9999, spd: 999 })
+    const enemy = makeEnemy({ maxHp: 100, def: 0, spd: 0 }, { kind: 'thug' })
+    enemy.hp = 34
+    const ctx = makeCombat(hero, enemy, seed)
+    ctx.battle.enemyRally = rally
+    return ctx
+  }
+  const rallied = (ctx: ReturnType<typeof setup>) => {
+    const lines = RALLY_LINES.map((l) => fill(l, { enemy: ctx.enemy.name }))
+    return ctx.events.filter((e) => e.type === 'narrate' && lines.includes(e.text))
+  }
+
+  it('heals once the first time a late-game enemy drops low, without costing its turn', () => {
+    let seen = 0
+    for (let seed = 1; seed <= 40; seed++) {
+      const ctx = setup(true, seed)
+      fightRound(ctx, jab)
+      const dropped = ctx.events.some((e) => e.type === 'hit' && e.target === 'enemy')
+      if (!dropped || ctx.enemy.hp <= 0) continue
+      seen++
+      expect(ctx.battle.enemyRally).toBe(false)
+      expect(rallied(ctx)).toHaveLength(1)
+      const heal = ctx.events.find((e) => e.type === 'heal' && e.target === 'enemy')
+      expect(heal).toMatchObject({ amount: 25 })
+      // It still got its own turn (an attack, a move, or running off).
+      const acted = ctx.events.some(
+        (e) =>
+          (e.type === 'hit' && e.attacker === 'enemy') ||
+          (e.type === 'miss' && e.attacker === 'enemy') ||
+          (e.type === 'narrate' && ENEMIES.thug.moves.some((m) => m.text === e.text)) ||
+          e.type === 'fled',
+      )
+      expect(acted).toBe(true)
+
+      // Dropping low again later: no second rally.
+      ctx.events.length = 0
+      ctx.enemy.hp = 20
+      fightRound(ctx, jab)
+      expect(rallied(ctx)).toHaveLength(0)
+    }
+    expect(seen).toBeGreaterThan(25)
+  })
+
+  it('never rallies before the late game, or off a knockout', () => {
+    for (let seed = 1; seed <= 20; seed++) {
+      const early = setup(false, seed)
+      fightRound(early, jab)
+      expect(rallied(early)).toHaveLength(0)
+
+      const ko = setup(true, seed)
+      ko.enemy.hp = 1
+      fightRound(ko, jab)
+      if (ko.enemy.hp <= 0) expect(rallied(ko)).toHaveLength(0)
+    }
+  })
+
+  it('uses all three remedies', () => {
+    const used = new Set<string>()
+    for (let seed = 1; seed <= 60; seed++) {
+      const ctx = setup(true, seed)
+      fightRound(ctx, jab)
+      for (const e of rallied(ctx)) if (e.type === 'narrate') used.add(e.text)
+    }
+    expect(used.size).toBe(3)
   })
 })
 

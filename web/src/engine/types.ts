@@ -190,6 +190,8 @@ export interface BattleState {
   enemyLastMove: number | null
   /** The enemy ran off (which counts as a win). */
   enemyFled: boolean
+  /** Late game: the enemy still has its one free heal for when it first drops low. */
+  enemyRally: boolean
 }
 
 // ── NPCs ─────────────────────────────────────────────────────────────────────

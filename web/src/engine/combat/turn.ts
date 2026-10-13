@@ -4,7 +4,7 @@
  * then the enemy may leave an opening.
  */
 
-import { ENEMIES } from '../../content/enemies'
+import { ENEMIES, RALLY_LINES } from '../../content/enemies'
 import { HERO_LINES } from '../../content/hero'
 import { MOVES } from '../../content/moves'
 import { OPENING_ORDER, OPENING_SCENARIOS, OPENINGS } from '../../content/openings'
@@ -18,12 +18,13 @@ import {
   MIN_DAMAGE,
   OPENING_CHANCE,
   OPENING_TARGETS_OFFERED,
+  RALLY,
   SAY_CHANCE,
 } from '../balance'
 import { fill } from '../text'
 import type { BattleState, Hero, MoveId, OpeningTarget, Side, SkillId, Tone } from '../types'
 import { type CombatContext, fighter, other } from './context'
-import { applyDamage, initiative, mitigation } from './damage'
+import { applyDamage, applyHeal, initiative, mitigation } from './damage'
 import { aimsAtFoe, applyEffects, attack } from './effects'
 import { lockableGear, lockableMoves } from './locks'
 import { clamp, effectiveStats, hasStatus, hpRatio, isDown } from './stats'
@@ -130,6 +131,7 @@ export function strikeOpening(ctx: CombatContext, target: OpeningTarget | 'brace
   )
   for (const line of result.text) narrate(ctx, line)
   applyEffects(ctx, result.winner, result.effects)
+  rally(ctx)
   return outcome(ctx)
 }
 
@@ -146,6 +148,20 @@ function takeTurn(ctx: CombatContext, side: Side, act: () => void): void {
     else act()
   }
   endTurn(ctx, side)
+  rally(ctx)
+}
+
+/**
+ * Late game, the first time an enemy drops low (and survives), it heals once for free,
+ * on top of whatever it does with its turn.
+ */
+function rally(ctx: CombatContext): void {
+  const { battle, enemy } = ctx
+  if (!battle.enemyRally || isDown(enemy) || hpRatio(enemy) >= RALLY.below) return
+  battle.enemyRally = false
+  narrate(ctx, ctx.pick('rally', RALLY_LINES), 'danger')
+  const amount = applyHeal(enemy, enemy.stats.maxHp * RALLY.healPct)
+  ctx.emit({ type: 'heal', target: 'enemy', amount, hpAfter: enemy.hp })
 }
 
 function heroAct(ctx: CombatContext, action: HeroAction): void {

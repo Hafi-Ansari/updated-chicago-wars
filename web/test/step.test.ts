@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { SKILLS } from '../src/content/skills'
-import { MAX_MOVES, TRAINING, trainingPrice } from '../src/engine/balance'
+import { MAX_MOVES, RALLY, TRAINING, trainingPrice } from '../src/engine/balance'
 import { choicesFor } from '../src/engine/dialogue'
 import { teachableMoves } from '../src/engine/encounters'
 import { pickFresh } from '../src/engine/lines'
@@ -93,6 +93,19 @@ describe('step', () => {
     expect(after.phase.kind).toBe('learnMove')
     expect(after.hero.clout).toBeGreaterThan(before.hero.clout)
     expect(after.hero.moves.every((m) => m.pp === null || m.pp > 0)).toBe(true)
+  })
+
+  it('only late-game battles come with an enemy rally', () => {
+    const battleAt = (block: number) => {
+      for (let seed = 1; seed < 200; seed++) {
+        const start = newGame('Tester', seed).state
+        const next = step({ ...start, block }, { type: 'walk' }).state
+        if (next.phase.kind === 'battle') return next.phase.battle
+      }
+      throw new Error('never reached a battle')
+    }
+    expect(battleAt(RALLY.fromBlock - 2).enemyRally).toBe(false)
+    expect(battleAt(RALLY.fromBlock - 1).enemyRally).toBe(true)
   })
 
   it('an enemy running off pays out exactly like a win', () => {

@@ -26,6 +26,7 @@ import {
   MOVES_OFFERED,
   maxMoveTier,
   POST_FIGHT_HEAL,
+  RALLY,
   SAY_CHANCE,
   UNFORGETTABLE_MOVE,
 } from './balance'
@@ -375,6 +376,7 @@ function startBattle(state: GameState, enemy: Enemy, canFlee: boolean, ctx: Step
       enemyMoveUses: [],
       enemyLastMove: null,
       enemyFled: false,
+      enemyRally: state.block >= RALLY.fromBlock,
     },
   }
 }

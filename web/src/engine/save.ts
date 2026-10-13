@@ -42,6 +42,7 @@ function fromV2(state: Record<string, unknown>): void {
     battle.enemyMoveUses = []
     battle.enemyLastMove = null
     battle.enemyFled = false
+    battle.enemyRally = false
   }
   if (phase.kind === 'learnMove') {
     // A paid lesson in progress: the move is free now.

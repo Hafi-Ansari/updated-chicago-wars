@@ -76,6 +76,7 @@ export function makeCombat(
       enemyMoveUses: [],
       enemyLastMove: null,
       enemyFled: false,
+      enemyRally: false,
     },
   }
 }

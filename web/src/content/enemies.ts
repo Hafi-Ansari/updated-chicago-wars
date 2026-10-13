@@ -463,3 +463,10 @@ export const ENEMIES: Record<EnemyKind, EnemyDef> = {
 }
 
 export const BOSS_NAME = 'Lil Midnight'
+
+/** The late-game rally: one free heal the first time an enemy drops low. Narration. */
+export const RALLY_LINES = [
+  '{enemy} knocks back a swig of cherry cough syrup straight from the bottle. Medicinal. Allegedly.',
+  '{enemy} pulls out a tub of shea butter and works it into every scrape. Ashy is not an option.',
+  "{enemy} closes their eyes and remembers the Bulls' '90s run. Six rings. Two three-peats. They feel unstoppable.",
+] as const

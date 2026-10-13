@@ -74,8 +74,14 @@ export const OPENING_TARGETS_OFFERED = 3
 // ── Run structure ────────────────────────────────────────────────────────────
 
 export const BLOCKS_PER_RUN = 12
-/** Enemy stats grow by this fraction per block (block 6 = +39%). */
-export const ENEMY_SCALING_PER_BLOCK = 0.065
+
+/**
+ * Late-game rally: from `fromBlock` on, the first time an enemy drops below `below`
+ * of its max HP it heals `healPct` of max HP for free (it doesn't cost a turn).
+ */
+export const RALLY = { fromBlock: 8, below: 0.3, healPct: 0.25 }
+/** Enemy stats grow by this fraction per block (block 6 = +36%). */
+export const ENEMY_SCALING_PER_BLOCK = 0.06
 
 /** What walking to the next block runs into. Vendors are visited by choice, not at random. */
 export type EncounterKind = 'fight' | 'streetEvent'
