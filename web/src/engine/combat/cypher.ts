@@ -8,6 +8,7 @@
 import { CYPHERS } from '../../content/cyphers'
 import type { CypherPrompt } from '../../content/types'
 import { CYPHER, CYPHER_EFFECTS } from '../balance'
+import { cleanBar } from '../bars'
 import { fill } from '../text'
 import type { BarResult, BattleState, CypherState, CypherTier } from '../types'
 import type { CombatContext } from './context'
@@ -49,16 +50,6 @@ export function startCypher(ctx: CombatContext): void {
 
 const clamp = (value: number, min: number, max: number) =>
   Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : min
-
-/** At most two lines of maxLineLength characters, trimmed. */
-export function cleanBar(text: string): string {
-  return text
-    .split('\n')
-    .map((line) => line.trim().slice(0, CYPHER.maxLineLength))
-    .filter(Boolean)
-    .slice(0, 2)
-    .join('\n')
-}
 
 /**
  * A bar's score: quality scaled by how well it rhymes (no rhyme keeps 60%), plus up to +1

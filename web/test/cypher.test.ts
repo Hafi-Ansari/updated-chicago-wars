@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { CYPHERS } from '../src/content/cyphers'
 import { CYPHER } from '../src/engine/balance'
-import { barScore, canBattleRap, cleanBar, tierOf } from '../src/engine/combat/cypher'
+import { cleanBar, MAX_BAR_LINE_LENGTH } from '../src/engine/bars'
+import { barScore, canBattleRap, tierOf } from '../src/engine/combat/cypher'
 import { migrateSave } from '../src/engine/save'
 import { newGame, step } from '../src/engine/step'
 import type { BarResult, BattleState, GameEvent, GameState } from '../src/engine/types'
@@ -145,7 +146,7 @@ describe('a cypher', () => {
     })
     const said = events.find((e) => e.type === 'say' && e.side === 'hero')
     expect(said?.type === 'say' && said.text).toBe(
-      `${'x'.repeat(CYPHER.maxLineLength)}\nsecond line`,
+      `${'x'.repeat(MAX_BAR_LINE_LENGTH)}\nsecond line`,
     )
   })
 })

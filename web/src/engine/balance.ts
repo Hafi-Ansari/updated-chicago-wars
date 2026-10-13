@@ -81,8 +81,6 @@ export const CYPHER = {
   picked: { flop: 1, decent: 4.5, fire: 7 },
   /** Quality assumed when the judge couldn't answer, so a rhyme alone tops out at decent. */
   unjudgedQuality: 5,
-  /** A typed bar is at most two lines of this many characters. */
-  maxLineLength: 90,
 } as const
 
 /** What each tier does. A diss can't be dodged; hyped goes first so it boosts this hit's crit. */

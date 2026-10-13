@@ -1,4 +1,14 @@
 {
+  // Vercel compiles api/*.ts with this file's compilerOptions (it ignores project
+  // references), so they describe the functions: modern Node ESM. Type-checking
+  // still runs through the referenced projects below.
+  "compilerOptions": {
+    "target": "es2023",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "skipLibCheck": true,
+    "strict": true
+  },
   "files": [],
   "references": [
     { "path": "./tsconfig.app.json" },

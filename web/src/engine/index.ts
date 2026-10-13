@@ -6,6 +6,7 @@ export {
   MAX_MOVES,
   UNFORGETTABLE_MOVE,
 } from './balance'
+export { cleanBar, MAX_BAR_LINE_LENGTH } from './bars'
 export { canBattleRap, cypherPrompt } from './combat/cypher'
 export { canUseMove, canUseSkill } from './combat/turn'
 export { type ChoiceView, choicesFor } from './dialogue'
