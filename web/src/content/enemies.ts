@@ -375,36 +375,186 @@ const gangRapper: EnemyDef = {
   ],
 }
 
-const boss: EnemyDef = {
-  kind: 'boss',
-  title: 'King of Chicago',
+// ── The gauntlet: blocks 11-13 of every run ─────────────────────────────────
+
+const jester: EnemyDef = {
+  kind: 'jester',
+  name: "The Dajjal's Jester",
+  title: 'Opening Act',
+  entrance:
+    "Bells jingle somewhere in the dark. The Dajjal's Jester cartwheels out of an alley, grinning way too wide.",
   rhymes: true,
   intro: [
-    "So you're the one making noise on my streets?\nI'm about to turn you to a B-side with no beats.",
-    "Twelve blocks you walked just to meet the King?\nShould've stayed home, 'cause you won't feel a thing.",
-    'Ice on my neck and a crown on my head,\nthe whole city bows to every word I said.',
-    "Midnight's the hour when the King comes out,\nand by the end of this, nobody will doubt.",
+    "Jingle, jingle, here comes the fool,\nmy master's only got one eye, and it's on you.",
+    "Welcome, welcome, to the end of days!\nI'm the opening act, and the act never pays.",
+    'My master sent me to warm up the crowd,\nso laugh at my jokes, and laugh real loud!',
+    "Step right up to the last show in town,\nthe world's about to end, and I'm the clown!",
   ],
   taunt: [
-    "Kneel down, peasant, show some respect,\nthis crown's been heavy since my very first check.",
-    "You hear that crowd? They're chanting my name,\nyou're just a guest star in the Midnight game.",
-    "Gold on my wrist and gold on my teeth,\nI'm the King up top, you're the dirt underneath.",
-    "I been the King since before you could crawl,\nI'm Chicago itself, I'm the wind and the wall.",
+    "Paradise or fire? Ooh, tough call, I know,\nspoiler: it's fire. It's always fire, though.",
+    'My master sees with only one eye,\nbut he sees right through you, and so do I.',
+    "Everything I say is a lie, it's true!\n...Wait. Then that's a lie too. What do I do?",
+    'Ha! Hee! Hoo! You fell for it twice,\nI said it was paradise, I never said nice!',
+    'Juggle, juggle, toss and spin,\nthe end is near, so let the show begin!',
+  ],
+  blockFlee: [
+    "Leaving so soon? The show's just begun!\nNobody walks out on the end-of-the-world fun!",
+  ],
+  defeat: [
+    "Oh no, oh woe, the fool takes a fall,\nmy master won't be laughing at all...",
+    "Fine, fine, the Jester takes his bow,\nbut the Queen is next, and he's waiting now.",
+    "My bells are bent and my hat's all torn,\ntell my master... consider him warned.",
+  ],
+  basicAttackWeight: 2.5,
+  moves: [
+    {
+      weight: 1,
+      text: '{enemy} juggles three flaming bowling pins, then throws all three at you.',
+      effects: [{ type: 'damage', power: 0.45, hits: 3 }],
+    },
+    {
+      weight: 1,
+      text: '{enemy} offers you paradise. You step in. It is, somehow, on fire.',
+      effects: [
+        { type: 'damage', power: 1 },
+        { type: 'status', target: 'foe', status: 'dazed', turns: 2, chance: 0.6 },
+      ],
+    },
+    {
+      weight: 1.3,
+      text: '{enemy} covers one eye, whispers "my master sees you," and pokes you in both of yours.',
+      effects: [
+        { type: 'damage', power: 0.6 },
+        { type: 'status', target: 'foe', status: 'blinded', turns: 3 },
+      ],
+    },
+    {
+      weight: 1.2,
+      text: '{enemy} frisks you mid-cartwheel and leaves a rubber chicken where your gear was.',
+      effects: [{ type: 'damage', power: 0.6 }, { type: 'lockGear' }],
+    },
+    {
+      weight: 0.7,
+      text: '{enemy} backflips, honks a tiny horn, and takes a bow. Nobody clapped. He feels great anyway.',
+      effects: [
+        { type: 'status', target: 'self', status: 'hyped', turns: 2 },
+        { type: 'status', target: 'self', status: 'guarded', turns: 1 },
+      ],
+    },
+  ],
+}
+
+const queen: EnemyDef = {
+  kind: 'queen',
+  name: 'Rodney',
+  title: 'The Gay Queen',
+  entrance:
+    'A pink stretch limo pulls up to the curb. The door swings open, and Rodney steps out in head-to-toe pink, lowering his sunglasses.',
+  rhymes: true,
+  intro: [
+    'I MUST get to (hmmmm) know you,\nmysterious stranger, come thruuuu!',
+    'We were going to be such GOOD friends,\n(hmmmmm) I like to throw it back on men.',
+    "Oh, you're the one who's been causing a scene?\n(hmmmm) baby, you've never fought a Queen.",
+    'Pink from my boots to the tips of my nails,\n(hmmmm) honey, the Queen never fails.',
+    "The Gold Coast called and it said I'm the best,\n(hmmmmm) now sit down, darling, and give it a rest.",
+  ],
+  taunt: [
+    'Was that a punch? (hmmmm) how adorable,\nyour form is a crime and your fit is deplorable.',
+    'Hmmmmm. Hmmmm. Let me think on it, dear...\nnope, still losing. That much is clear.',
+    "Careful, sweetie, you'll smudge my gloss,\n(hmmmm) I need you to know who's boss.",
+    "I'd call your outfit cute, but I just can't lie,\n(hmmmmm) it's giving clearance rack. Bye.",
+    'Twirl, dip, death drop, slay,\n(hmmmm) that is how a Queen does play.',
+  ],
+  blockFlee: ['Leaving? Already? (hmmmm) the nerve,\nsit DOWN, darling, and get what you deserve.'],
+  defeat: [
+    "Hmmmm... well. That was rude of you, dear,\nI'll be at brunch if you need me. I'm out of here.",
+    "You ruined my boa and you scuffed my shoe,\n(hmmmm) the King's up next. Good luck to you.",
+    'Fine, you win, (hmmmm) but I looked better losing,\nand looking good is the part worth choosing.',
+  ],
+  basicAttackWeight: 2.5,
+  moves: [
+    {
+      weight: 1,
+      text: '{enemy} hits a death drop so hard the sidewalk cracks. You were standing on that sidewalk.',
+      effects: [{ type: 'damage', power: 1.4 }],
+    },
+    {
+      weight: 1.2,
+      text: '{enemy} reads you for filth: your fit, your hairline, your credit score. All of it.',
+      effects: [
+        { type: 'damage', power: 0.6 },
+        { type: 'status', target: 'foe', status: 'shook', turns: 2 },
+      ],
+    },
+    {
+      weight: 1,
+      text: '{enemy} blows you a kiss. You are, against your will, flustered.',
+      effects: [
+        { type: 'damage', power: 0.5 },
+        { type: 'status', target: 'foe', status: 'dazed', turns: 2, chance: 0.7 },
+      ],
+    },
+    {
+      weight: 1.3,
+      text: '{enemy} whips a pink feather boa across your face. Feathers. Everywhere. In your eyes.',
+      effects: [
+        { type: 'damage', power: 0.5, hits: 2 },
+        { type: 'status', target: 'foe', status: 'blinded', turns: 2 },
+      ],
+    },
+    {
+      weight: 1.1,
+      text: '"I\'ll be taking that, darling." {enemy} lifts your wallet mid-twirl. Win, and you can have it back.',
+      effects: [
+        { type: 'damage', power: 0.7 },
+        { type: 'stealClout', min: 8, max: 14 },
+      ],
+    },
+    {
+      weight: 0.8,
+      text: '{enemy} snaps open a pink fan and fans himself. Unbothered. Moisturized. In his lane.',
+      effects: [
+        { type: 'status', target: 'self', status: 'vibing', turns: 3 },
+        { type: 'status', target: 'self', status: 'guarded', turns: 1 },
+      ],
+    },
+  ],
+}
+
+const boss: EnemyDef = {
+  kind: 'boss',
+  name: 'King Durkio',
+  title: 'King of Chicago',
+  entrance:
+    'The crowd parts. A limo door opens, and out steps a man with blonde dreads, a crown, and a LOT of chains.',
+  rhymes: true,
+  intro: [
+    "Blonde dreads swinging and the crown on tight,\nthey call me the Voice, and I'm singing you goodnight.",
+    "Thirteen blocks you walked just to meet the King?\nShould've stayed home, 'cause you won't feel a thing.",
+    'You got past the Jester, you got past the Queen,\nbut nobody, NOBODY, gets past the King.',
+    'Auto-tune on and the ice on freeze,\nthe whole Chi bows when I hum on the breeze.',
+  ],
+  taunt: [
+    "Kneel down, rookie, show some respect,\nthis crown's been heavy since my very first check.",
+    "You hear that crowd? They're chanting my name,\nyou're just a feature on my verse in this game.",
+    "Ice on the wrist and blonde on the dreads,\nthe whole city's singing whatever I said.",
+    "Hold up, let me sing it, let me put it on wax,\nyour downfall's a ballad, and it's my best track.",
     'Every punch you throw, I already knew,\nI wrote this ending way before you.',
-    "Midnight hour, feel the city's power,\nI'm getting stronger by the minute, by the hour.",
+    "I been the King since before you could crawl,\nI'm Chicago itself, I'm the wind and the wall.",
   ],
   blockFlee: [
     "Nobody leaves The Bean 'til the King says so,\nsit down, the show's only halfway through, yo.",
   ],
   defeat: [
     "Nah... NAH! The crown... it's slipping away...\nthe city is yours, {hero}... for today.",
-    "Midnight's over, here comes the sun...\nyou took my throne. You really won.",
+    "Auto-tune's busted and the Voice just cracked...\nyou took the crown, but the King'll be back.",
+    'Blonde dreads down and the chain hit the ground,\nall hail {hero}, the new King in town.',
   ],
   basicAttackWeight: 2,
   moves: [
     {
       weight: 1,
-      text: '{enemy} spits a platinum-certified diss. The crowd goes "OOOOH."',
+      text: '{enemy} sings a hook so cold the whole block goes "OOOOH."',
       effects: [
         { type: 'damage', power: 0.7 },
         { type: 'status', target: 'foe', status: 'shook', turns: 2 },
@@ -420,7 +570,7 @@ const boss: EnemyDef = {
     },
     {
       weight: 0.7,
-      text: '{enemy}\'s hype man screams "AYYYY!" Now {enemy} is pumped.',
+      text: "{enemy}'s whole crew starts chanting his name. Now {enemy} is pumped.",
       effects: [{ type: 'status', target: 'self', status: 'pumped', turns: 2 }],
     },
     {
@@ -434,12 +584,12 @@ const boss: EnemyDef = {
     {
       weight: 1,
       whenBelow: 0.5,
-      text: 'The clock strikes midnight. {enemy} starts vibing to a beat only they can hear.',
+      text: "{enemy} closes his eyes and croons into the auto-tune. They don't call him the Voice for nothing.",
       effects: [{ type: 'status', target: 'self', status: 'vibing', turns: 3 }],
     },
     {
       weight: 1.1,
-      text: "{enemy} flashes a diamond chain under the streetlight. You can't see a thing.",
+      text: '{enemy} flips his blonde dreads into the streetlight, and the glare off his chains blinds you.',
       effects: [
         { type: 'damage', power: 0.7 },
         { type: 'status', target: 'foe', status: 'blinded', turns: 2 },
@@ -459,10 +609,10 @@ export const ENEMIES: Record<EnemyKind, EnemyDef> = {
   biker,
   gangLeader,
   gangRapper,
+  jester,
+  queen,
   boss,
 }
-
-export const BOSS_NAME = 'Lil Midnight'
 
 /** The late-game rally: one free heal the first time an enemy drops low. Narration. */
 export const RALLY_LINES = [

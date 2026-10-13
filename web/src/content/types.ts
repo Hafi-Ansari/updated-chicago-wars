@@ -74,7 +74,11 @@ export interface EnemyMove {
 
 export interface EnemyDef {
   kind: EnemyKind
+  /** Named enemies (the end-of-run gauntlet) always go by this name. */
+  name?: string
   title: string
+  /** Narration when it shows up, in place of "You encounter {enemy} the {title}!". */
+  entrance?: Text
   /** Whether this enemy raps. Goons try. Goons fail. */
   rhymes: boolean
   intro: Pool

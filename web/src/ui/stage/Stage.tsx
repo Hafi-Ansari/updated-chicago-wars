@@ -173,7 +173,8 @@ export function Stage({ state, current, display, foeHidden }: StageProps) {
             {battle ? (
               <HpBox
                 side="enemy"
-                name={foe.name}
+                // A leading "The" doesn't earn its space in the box (The Dajjal's Jester).
+                name={foe.name.replace(/^The /, '')}
                 subtitle={foe.subtitle}
                 hp={display.enemyHp}
                 maxHp={battle.enemy.stats.maxHp}

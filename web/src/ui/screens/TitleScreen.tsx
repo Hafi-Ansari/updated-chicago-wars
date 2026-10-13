@@ -37,7 +37,7 @@ export function TitleScreen({ onStart, onResume, settings, onSettings }: TitleSc
       <h1 className="title__logo pixel">
         Chicago <span>Wars</span>
       </h1>
-      <p className="title__tag">A turn-based street RPG. Twelve blocks. One crown.</p>
+      <p className="title__tag">A turn-based street RPG. Thirteen blocks. One crown.</p>
 
       <form className="title__form panel" onSubmit={submit}>
         <label htmlFor="hero-name" className="pixel">

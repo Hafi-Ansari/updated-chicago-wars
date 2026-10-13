@@ -10,7 +10,16 @@ import type { RngState } from './rng'
 
 export type Side = 'hero' | 'enemy'
 
-export type EnemyKind = 'goon' | 'thug' | 'biker' | 'gangLeader' | 'gangRapper' | 'boss'
+export type EnemyKind =
+  | 'goon'
+  | 'thug'
+  | 'biker'
+  | 'gangLeader'
+  | 'gangRapper'
+  /** The end-of-run gauntlet: the Dajjal's Jester, the Gay Queen Rodney, and King Durkio. */
+  | 'jester'
+  | 'queen'
+  | 'boss'
 
 /** Hidden gear sold by the Plug (the original game's "hidden skills"). */
 export type SkillId =

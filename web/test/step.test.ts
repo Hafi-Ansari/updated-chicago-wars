@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { ENEMIES } from '../src/content/enemies'
 import { SKILLS } from '../src/content/skills'
 import { MAX_MOVES, RALLY, TRAINING, trainingPrice } from '../src/engine/balance'
 import { choicesFor } from '../src/engine/dialogue'
@@ -93,6 +94,37 @@ describe('step', () => {
     expect(after.phase.kind).toBe('learnMove')
     expect(after.hero.clout).toBeGreaterThan(before.hero.clout)
     expect(after.hero.moves.every((m) => m.pp === null || m.pp > 0)).toBe(true)
+  })
+
+  it('the last three blocks are always the Jester, Rodney, then King Durkio, no running', () => {
+    for (let seed = 1; seed <= 20; seed++) {
+      const start = newGame('Tester', seed).state
+      const expected = { 11: 'jester', 12: 'queen', 13: 'boss' } as const
+      for (const [block, kind] of Object.entries(expected)) {
+        const { state, events } = step({ ...start, block: Number(block) - 1 }, { type: 'walk' })
+        if (state.phase.kind !== 'battle') throw new Error(`no fight at block ${block}`)
+        const { enemy, canFlee } = state.phase.battle
+        expect(enemy.kind).toBe(kind)
+        expect(enemy.name).toBe(ENEMIES[kind].name)
+        expect(canFlee).toBe(false)
+        // The entrance plays before they show up.
+        const entrance = events.findIndex((e) => e.type === 'narrate' && e.tone === 'danger')
+        expect(entrance).toBeLessThan(events.findIndex((e) => e.type === 'appear'))
+        expect(step(state, { type: 'flee' }).state).toBe(state)
+      }
+    }
+  })
+
+  it('beating the Jester or Rodney keeps the run going; beating the King wins it', () => {
+    const fightAt = (block: number) => {
+      const start = newGame('Tester', 4).state
+      const walked = step({ ...start, block: block - 1 }, { type: 'walk' }).state
+      return winBattle(walked)
+    }
+    expect(fightAt(11).phase.kind).not.toBe('victory')
+    expect(fightAt(11).block).toBe(11)
+    expect(fightAt(12).phase.kind).not.toBe('victory')
+    expect(fightAt(13).phase.kind).toBe('victory')
   })
 
   it('only late-game battles come with an enemy rally', () => {

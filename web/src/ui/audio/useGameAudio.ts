@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import type { GameEvent, GameState, StatusKind } from '../../engine'
+import { type GameEvent, type GameState, isGauntlet, type StatusKind } from '../../engine'
 import type { PlayingEvent } from '../useGame'
 import { music, type SongId } from './music'
 import { sfx } from './sfx'
@@ -59,7 +59,7 @@ function cueFor(event: GameEvent): (() => void) | null {
 function songFor(state: GameState): SongId | null {
   switch (state.phase.kind) {
     case 'battle':
-      return state.phase.battle.enemy.kind === 'boss' ? 'boss' : 'battle'
+      return isGauntlet(state.phase.battle.enemy.kind) ? 'boss' : 'battle'
     case 'gameOver':
     case 'victory':
       return null

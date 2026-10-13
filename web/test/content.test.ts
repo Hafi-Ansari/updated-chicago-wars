@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { ENEMIES } from '../src/content/enemies'
 import { HERO_LINES } from '../src/content/hero'
 import { MOVES, STARTING_MOVES } from '../src/content/moves'
+import { NEIGHBORHOODS } from '../src/content/names'
 import { NPCS, PLUG_SALE_LINES } from '../src/content/npcs'
 import { SHOP_CATEGORIES, SKILL_ORDER, SKILLS } from '../src/content/skills'
+import { BLOCKS_PER_RUN, GAUNTLET, isGauntlet } from '../src/engine/balance'
 import type { Effect } from '../src/engine/types'
 
 /**
@@ -50,7 +52,7 @@ describe('rhyming content', () => {
   })
 
   it('big pools keep encounters fresh', () => {
-    const regular = Object.values(ENEMIES).filter((d) => d.kind !== 'boss')
+    const regular = Object.values(ENEMIES).filter((d) => !isGauntlet(d.kind))
     for (const def of regular) expect(def.intro.length).toBeGreaterThanOrEqual(8)
     expect(HERO_LINES.battleStart.length).toBeGreaterThanOrEqual(10)
     expect(HERO_LINES.victory.length).toBeGreaterThanOrEqual(10)
@@ -70,6 +72,27 @@ describe('moves', () => {
       expect(move.accuracy).toBeLessThanOrEqual(1)
       if (move.pp !== null) expect(move.pp).toBeGreaterThan(0)
     }
+  })
+})
+
+describe('the gauntlet', () => {
+  it('fills the last blocks with named enemies, ending with the King', () => {
+    const blocks = Object.keys(GAUNTLET).map(Number)
+    expect(Math.max(...blocks)).toBe(BLOCKS_PER_RUN)
+    expect(GAUNTLET[BLOCKS_PER_RUN]).toBe('boss')
+    expect(NEIGHBORHOODS).toHaveLength(BLOCKS_PER_RUN)
+    for (const kind of Object.values(GAUNTLET)) {
+      const def = ENEMIES[kind]
+      expect(def.name, kind).toBeTruthy()
+      expect(def.entrance, kind).toBeTruthy()
+      expect(def.intro.length).toBeGreaterThanOrEqual(4)
+    }
+    expect(ENEMIES.boss.name).toBe('King Durkio')
+  })
+
+  it('Rodney hums through his bars', () => {
+    const lines = [...ENEMIES.queen.intro, ...ENEMIES.queen.taunt, ...ENEMIES.queen.defeat]
+    for (const line of lines) expect(line.toLowerCase(), line).toMatch(/hmmm/)
   })
 })
 

@@ -26,7 +26,7 @@ export const NAMES: readonly string[] = [
   'Two-Flat Tasha',
 ]
 
-/** One neighborhood per block, final block is the boss arena. */
+/** One neighborhood per block; the last one is the King's arena. */
 export const NEIGHBORHOODS: readonly string[] = [
   'Pilsen',
   'Little Village',
@@ -39,5 +39,6 @@ export const NEIGHBORHOODS: readonly string[] = [
   'Uptown',
   'Lincoln Park',
   'The Loop',
+  'Gold Coast',
   'Millennium Park (The Bean)',
 ]

@@ -18,7 +18,7 @@ export const HERO_LINES: HeroLines = {
   ],
   bossStart: [
     "They say you're the King, but the crown looks loose,\nI'm about to take it back and put it to use.",
-    "Twelve blocks deep and I'm still on my feet,\nthe throne's about to get a brand new seat.",
+    "Thirteen blocks deep and I'm still on my feet,\nthe throne's about to get a brand new seat.",
     "All that ice and you're still lukewarm,\nI'm about to show you what a real storm's for.",
   ],
   victory: [

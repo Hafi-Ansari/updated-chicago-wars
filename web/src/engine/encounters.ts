@@ -1,24 +1,23 @@
 /** Builds the things the hero runs into: enemies, NPCs, and which one comes next. */
 
-import { BOSS_NAME } from '../content/enemies'
+import { ENEMIES } from '../content/enemies'
 import { MOVES } from '../content/moves'
 import { NAMES } from '../content/names'
 import {
-  BLOCKS_PER_RUN,
   ENEMY_SCALING_PER_BLOCK,
   ENEMY_STATS,
   type EncounterKind,
   encounterWeights,
   enemyWeights,
+  type GauntletKind,
+  isGauntlet,
   type Range,
 } from './balance'
 import type { Rng } from './rng'
 import type { Enemy, EnemyKind, GameState, Hero, MoveId, NpcId, NpcInstance } from './types'
 
-export type Encounter = EncounterKind | 'boss'
-
-export function rollEncounter(rng: Rng, block: number): Encounter {
-  if (block >= BLOCKS_PER_RUN) return 'boss'
+/** A regular block's encounter (the GAUNTLET blocks are fixed fights instead). */
+export function rollEncounter(rng: Rng, block: number): EncounterKind {
   const weights = encounterWeights(block)
   return rng.weighted(
     (Object.keys(weights) as EncounterKind[]).map((kind) => ({
@@ -40,8 +39,8 @@ export function rollEnemyKind(rng: Rng, block: number): EnemyKind {
 
 export function createEnemy(rng: Rng, kind: EnemyKind, block: number, name: string): Enemy {
   const ranges = ENEMY_STATS[kind]
-  // The boss has fixed stats tuned for the end of a run, so it doesn't scale.
-  const scale = kind === 'boss' ? 1 : 1 + ENEMY_SCALING_PER_BLOCK * block
+  // The gauntlet has fixed stats tuned for the end of a run, so it doesn't scale.
+  const scale = isGauntlet(kind) ? 1 : 1 + ENEMY_SCALING_PER_BLOCK * block
   const roll = (range: Range) => Math.round(rng.int(range[0], range[1]) * scale)
 
   const maxHp = roll(ranges.maxHp)
@@ -61,8 +60,10 @@ export function createEnemy(rng: Rng, kind: EnemyKind, block: number, name: stri
   }
 }
 
-export function createBoss(rng: Rng): Enemy {
-  return createEnemy(rng, 'boss', BLOCKS_PER_RUN, BOSS_NAME)
+/** One of the gauntlet's named enemies. */
+export function createNamed(rng: Rng, kind: GauntletKind, block: number): Enemy {
+  const def = ENEMIES[kind]
+  return createEnemy(rng, kind, block, def.name ?? def.title)
 }
 
 /** Picks a name nobody has used yet this run (recycling once the pool runs dry). */

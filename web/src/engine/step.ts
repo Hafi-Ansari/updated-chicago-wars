@@ -19,6 +19,7 @@ import { SKILLS } from '../content/skills'
 import { assertNever } from './assert'
 import {
   BLOCKS_PER_RUN,
+  GAUNTLET,
   HERO_START,
   HERO_START_CLOUT,
   LEVEL_UP,
@@ -49,8 +50,8 @@ import {
   type StepContext,
 } from './dialogue'
 import {
-  createBoss,
   createEnemy,
+  createNamed,
   createNpc,
   learnableMoves,
   rollEncounter,
@@ -219,16 +220,15 @@ function walk(state: GameState, ctx: StepContext): void {
   const neighborhood = NEIGHBORHOODS[(state.block - 1) % NEIGHBORHOODS.length] ?? 'Chicago'
   ctx.emit({ type: 'location', block: state.block, neighborhood })
 
+  // The last blocks are always the same three fights, and there's no running from them.
+  const named = GAUNTLET[state.block]
+  if (named) {
+    startBattle(state, createNamed(ctx.rng, named, state.block), false, ctx)
+    return
+  }
+
   const encounter = rollEncounter(ctx.rng, state.block)
   switch (encounter) {
-    case 'boss':
-      ctx.emit({
-        type: 'narrate',
-        text: 'The crowd parts. Somebody in a LOT of chains steps out of a limo.',
-        tone: 'danger',
-      })
-      startBattle(state, createBoss(ctx.rng), false, ctx)
-      return
     case 'fight': {
       const kind = rollEnemyKind(ctx.rng, state.block)
       const enemy = createEnemy(ctx.rng, kind, state.block, takeName(state, ctx.rng))
@@ -346,8 +346,13 @@ function heroSay(state: GameState, ctx: StepContext, line: string, enemy = ''): 
 function startBattle(state: GameState, enemy: Enemy, canFlee: boolean, ctx: StepContext): void {
   const def = ENEMIES[enemy.kind]
   const vars = { hero: state.hero.name, enemy: enemy.name }
-  ctx.emit({ type: 'appear', name: enemy.name, who: enemy.kind })
-  ctx.emit({ type: 'narrate', text: `You encounter ${enemy.name} the ${def.title}!` })
+  if (def.entrance) {
+    ctx.emit({ type: 'narrate', text: fill(def.entrance, vars), tone: 'danger' })
+    ctx.emit({ type: 'appear', name: enemy.name, who: enemy.kind })
+  } else {
+    ctx.emit({ type: 'appear', name: enemy.name, who: enemy.kind })
+    ctx.emit({ type: 'narrate', text: `You encounter ${enemy.name} the ${def.title}!` })
+  }
   ctx.emit({
     type: 'say',
     speaker: enemy.name,

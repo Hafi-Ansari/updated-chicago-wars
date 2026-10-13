@@ -73,7 +73,22 @@ export const OPENING_TARGETS_OFFERED = 3
 
 // ── Run structure ────────────────────────────────────────────────────────────
 
-export const BLOCKS_PER_RUN = 12
+export const BLOCKS_PER_RUN = 13
+
+export type GauntletKind = 'jester' | 'queen' | 'boss'
+
+/**
+ * The last blocks of every run are fixed fights against named enemies, ending with
+ * the King of Chicago. These can't be run from and don't scale with the block.
+ */
+export const GAUNTLET: Readonly<Record<number, GauntletKind>> = {
+  11: 'jester',
+  12: 'queen',
+  13: 'boss',
+}
+
+export const isGauntlet = (kind: EnemyKind): kind is GauntletKind =>
+  Object.values(GAUNTLET).includes(kind as GauntletKind)
 
 /**
  * Late-game rally: from `fromBlock` on, the first time an enemy drops below `below`
@@ -83,7 +98,10 @@ export const RALLY = { fromBlock: 8, below: 0.3, healPct: 0.25 }
 /** Enemy stats grow by this fraction per block (block 6 = +36%). */
 export const ENEMY_SCALING_PER_BLOCK = 0.06
 
-/** What walking to the next block runs into. Vendors are visited by choice, not at random. */
+/**
+ * What walking to the next block runs into (outside the GAUNTLET blocks). Vendors are
+ * visited by choice, not at random.
+ */
 export type EncounterKind = 'fight' | 'streetEvent'
 
 export function encounterWeights(block: number): Record<EncounterKind, number> {
@@ -131,9 +149,26 @@ export const ENEMY_STATS: Record<EnemyKind, EnemyStatRanges> = {
     crit: 0.1,
     clout: [36, 46],
   },
+  // The gauntlet has fixed stats, tuned for the end of a run.
+  jester: {
+    maxHp: [100, 100],
+    atk: [18, 18],
+    def: [12, 12],
+    spd: [15, 15],
+    crit: 0.1,
+    clout: [45, 45],
+  },
+  queen: {
+    maxHp: [115, 115],
+    atk: [19, 19],
+    def: [14, 14],
+    spd: [14, 14],
+    crit: 0.12,
+    clout: [55, 55],
+  },
   boss: {
-    maxHp: [140, 140],
-    atk: [20, 20],
+    maxHp: [155, 155],
+    atk: [21, 21],
     def: [16, 16],
     spd: [14, 14],
     crit: 0.12,
@@ -141,7 +176,7 @@ export const ENEMY_STATS: Record<EnemyKind, EnemyStatRanges> = {
   },
 }
 
-type TierWeights = Record<Exclude<EnemyKind, 'boss'>, number>
+type TierWeights = Record<Exclude<EnemyKind, GauntletKind>, number>
 
 /** Which enemies show up, by how deep into the run the hero is. */
 export function enemyWeights(block: number): TierWeights {

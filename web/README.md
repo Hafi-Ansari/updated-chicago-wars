@@ -1,6 +1,6 @@
 # Chicago Wars (web)
 
-A turn-based street RPG in the browser: twelve blocks of Chicago, a King at The Bean, and a
+A turn-based street RPG in the browser: thirteen blocks of Chicago, a King at The Bean, and a
 pigeon that steals your fries. It's a from-scratch rebuild of the 2020 Java console game in the
 repo root.
 
@@ -53,6 +53,10 @@ src/ui/        React: plays events back (typewriter, animations), dispatches act
   Every disrupt move also lands a hit, and like other riders the disruption only sticks if
   the hit does. Goons, Thugs and Bikers may run off below 20% HP with a parting line (`flee` on
   their definition), which counts as a win: same clout, heal, level progress and move offers.
+- **The gauntlet**: the last three blocks are always the same fights (`GAUNTLET` in
+  `balance.ts`): the Dajjal's Jester at block 11, the Gay Queen Rodney at 12, and King Durkio,
+  the King of Chicago, at The Bean on 13. They have fixed names, entrances, stats and sprites,
+  boss music, and no running away.
 - **Late-game rally**: from block 8, the first time an enemy drops below 30% HP it heals 25%
   for free, on top of its turn: cough syrup, shea butter, or remembering the Bulls' '90s run
   (`RALLY` in `balance.ts`, lines in `src/content/enemies.ts`).

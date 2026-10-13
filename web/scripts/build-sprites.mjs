@@ -88,14 +88,40 @@ const CAST = {
       { def: 'headwear/neck/neck_necklace_chain.json', color: 'gold' },
     ],
   },
+  // The Dajjal's Jester: two-tone fool's outfit, a ruff, and an eyepatch for his one-eyed master.
+  jester: {
+    skin: 'light',
+    layers: [
+      { def: 'feet/feet_slippers.json', color: 'yellow' },
+      { def: 'legs/leggings/legs_hose.json', color: 'purple' },
+      { def: 'torso/shirts/longsleeve/torso_clothes_longsleeve.json', color: 'yellow' },
+      { def: 'torso/jacket/torso_jacket_tabard.json', color: 'purple' },
+      { def: 'headwear/neck/neck_jabot.json', color: 'white' },
+      { def: 'headwear/accessories/eyepatch/facial_eyepatch_left.json', color: 'black' },
+      { def: 'headwear/hats/holiday/hat_holiday_elf.json', color: 'purple' },
+    ],
+  },
+  // Rodney, the Gay Queen: pink from his boots up, with a white boa of a scarf and shades.
+  queen: {
+    skin: 'black',
+    layers: [
+      { def: 'feet/boots/feet_boots_basic.json', color: 'pink' },
+      { def: 'legs/pants/legs_pants.json', color: 'pink' },
+      { def: 'torso/shirts/longsleeve/torso_clothes_longsleeve2_vneck.json', color: 'pink' },
+      { def: 'headwear/neck/neck_scarf.json', color: 'white' },
+      { def: 'hair/afro/hair_flat_top_straight.json', color: 'black' },
+      { def: 'headwear/accessories/glasses/facial_glasses_sunglasses.json', color: 'black' },
+    ],
+  },
+  // King Durkio: blonde dreads under the crown.
   boss: {
-    skin: 'amber',
+    skin: 'brown',
     layers: [
       { def: 'feet/shoes/feet_shoes_basic.json', color: 'black' },
       { def: 'legs/pants/legs_formal.json', color: 'black' },
       { def: 'torso/shirts/longsleeve/torso_clothes_longsleeve.json', color: 'black' },
       { def: 'torso/jacket/torso_jacket_collared.json', color: 'purple' },
-      { def: 'hair/afro/hair_dreadlocks_short.json', color: 'black' },
+      { def: 'hair/afro/hair_dreadlocks_long.json', color: 'blonde' },
       { def: 'headwear/neck/neck_necklace_chain.json', color: 'gold' },
       { def: 'headwear/hats/formal/hat_formal_crown.json', color: 'gold' },
     ],

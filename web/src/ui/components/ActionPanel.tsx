@@ -1,6 +1,7 @@
 /** The player's choices for the current phase, as numbered menus. */
 
 import { useState } from 'react'
+import { ENEMIES } from '../../content/enemies'
 import { MOVES } from '../../content/moves'
 import { NEIGHBORHOODS } from '../../content/names'
 import { NPC_ORDER } from '../../content/npcs'
@@ -9,10 +10,10 @@ import { SHOP_CATEGORIES, SKILL_ORDER, SKILLS } from '../../content/skills'
 import type { SkillCategory } from '../../content/types'
 import {
   type Action,
-  BLOCKS_PER_RUN,
   canUseMove,
   canUseSkill,
   choicesFor,
+  GAUNTLET,
   type GameState,
   MAX_MOVES,
   type MoveId,
@@ -67,14 +68,14 @@ export function ActionPanel({
   switch (phase.kind) {
     case 'explore': {
       const next = state.block + 1
-      const boss = next >= BLOCKS_PER_RUN
+      const named = GAUNTLET[next]
       return (
         <Menu
           label="Explore"
           options={[
             {
               key: 'walk',
-              label: boss ? 'Face the King' : 'Walk on',
+              label: named ? `Face ${ENEMIES[named].name}` : 'Walk on',
               sub: `Block ${next}: ${NEIGHBORHOODS[(next - 1) % NEIGHBORHOODS.length]}`,
               primary: true,
               onSelect: () => act({ type: 'walk' }),

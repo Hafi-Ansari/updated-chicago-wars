@@ -44,7 +44,7 @@ Three layers, one direction: `src/content/` (data) → `src/engine/` (rules) →
 Ids are string unions in `src/engine/types.ts`, and content is typed `Record<Id, Def>`, so `npm run typecheck` lists every place a new id must be defined. Beyond that:
 
 - **New `StatusKind`**: add wording to `STATUS_TEXT` in `src/ui/narration.ts`, add a tag to `STATUS_TAGS` in `src/ui/stage/HpBox.tsx` and implement its behavior in `src/engine/combat/status.ts` / `stats.ts`.
-- **New `EnemyKind`**: add stats to `ENEMY_STATS` and `enemyWeights` in `balance.ts`, a def to `ENEMIES` and a sprite. Sprites load by id from `public/sprites/<id>.png`; add a recipe to `CAST` in `scripts/build-sprites.mjs`, then run `npm run sprites`.
+- **New `EnemyKind`**: add stats to `ENEMY_STATS` in `balance.ts`, a def to `ENEMIES` and a sprite. Regular enemies also need a weight in `enemyWeights`; named end-of-run enemies go in `GAUNTLET` instead and need a `name` and `entrance` on their def (they don't scale with the block and can't be fled). Sprites load by id from `public/sprites/<id>.png`; add a recipe to `CAST` in `scripts/build-sprites.mjs`, then run `npm run sprites`.
 - **New phase or action**: handle it in `handle()` (`step.ts`), in `src/ui/components/ActionPanel.tsx` and in the bot's `chooseAction` in `test/sim.ts`. The bot is what keeps the balance test passing.
 - **New `GameEvent`**: handle it in `narration.ts`, plus `useGame.ts`, `Stage.tsx` and `useGameAudio.ts` if it changes HP or clout or needs animation or sound.
 - **New gear**: give it a `category` and a place in `SKILL_ORDER` (`src/content/skills.ts`); `test/content.test.ts` checks both. Add it to the bot's `SHOP_PRIORITY`/`GEAR_PRIORITY` in `test/sim.ts` if a sensible player would buy it, or the balance test won't see it.
