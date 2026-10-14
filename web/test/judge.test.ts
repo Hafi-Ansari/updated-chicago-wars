@@ -22,7 +22,10 @@ import { CYPHER } from '../src/engine/balance'
  * expected value, confidence, legend and per-level probabilities; nouls a probability.
  * Real responses from `npm run eval:judge` (eval/results/, gitignored) have this same shape.
  */
-function answers(levels: { wit: number; relevance: number; flow: number }, nouls = {}): JevAnswers {
+function answers(
+  levels: { funny?: number; clever?: number; relevance?: number; flow?: number },
+  nouls = {},
+): JevAnswers {
   const scoreAnswer = (value: number) => ({
     type: 'score' as const,
     score: value,
@@ -32,9 +35,10 @@ function answers(levels: { wit: number; relevance: number; flow: number }, nouls
   })
   const n = { rhymes_by_ear: 0.9, injection: 0.02, gibberish: 0.01, ...nouls }
   return {
-    wit: scoreAnswer(levels.wit),
-    relevance: scoreAnswer(levels.relevance),
-    flow: scoreAnswer(levels.flow),
+    funny: scoreAnswer(levels.funny ?? 0),
+    clever: scoreAnswer(levels.clever ?? 0),
+    relevance: scoreAnswer(levels.relevance ?? 0),
+    flow: scoreAnswer(levels.flow ?? 0),
     rhymes_by_ear: { type: 'noul', noul: n.rhymes_by_ear },
     injection: { type: 'noul', noul: n.injection },
     gibberish: { type: 'noul', noul: n.gibberish },
@@ -58,19 +62,46 @@ function fakeJev(status: number, body: unknown, seen: unknown[] = []): TypeSafeC
 const thugBar = CYPHERS.thug[0]?.bar ?? ''
 
 describe('Jev verdicts', () => {
-  it('scales the 0-4 levels to a 0-10 quality, wit weighted most', () => {
-    expect(verdictFrom(answers({ wit: 4, relevance: 4, flow: 4 })).quality).toBe(10)
-    expect(verdictFrom(answers({ wit: 0, relevance: 0, flow: 0 })).quality).toBe(0)
-    const witty = verdictFrom(answers({ wit: 4, relevance: 0, flow: 0 })).quality
-    const relevant = verdictFrom(answers({ wit: 0, relevance: 4, flow: 0 })).quality
-    expect(witty).toBeGreaterThan(relevant)
+  const quality = (levels: Parameters<typeof answers>[0]) => verdictFrom(answers(levels)).quality
+
+  it('scales the 0-4 levels to 0-10 marks and a 0-10 quality', () => {
+    const top = verdictFrom(answers({ funny: 4, clever: 4, relevance: 4, flow: 4 }))
+    expect(top.quality).toBe(10)
+    expect(top.marks).toEqual({ funny: 10, clever: 10, flow: 10, relevance: 10 })
+    expect(quality({})).toBe(0)
+    // Punch 5 (funny), flow 5, on the general topic: 0.7 x 5 + 0.3 x 5.
+    expect(quality({ funny: 2, relevance: 2, flow: 2 })).toBeCloseTo(5)
   })
 
-  it('rejects injection attempts and gibberish', () => {
-    const base = { wit: 4, relevance: 4, flow: 4 }
-    expect(verdictFrom(answers(base, { injection: 0.7 })).rejected).toBe(true)
-    expect(verdictFrom(answers(base, { gibberish: 0.9 })).rejected).toBe(true)
-    expect(verdictFrom(answers(base, { injection: 0.2, gibberish: 0.3 })).rejected).toBe(false)
+  it('a crude joke that kills scores like wordplay, and being both scores higher', () => {
+    expect(quality({ funny: 4, flow: 2 })).toBe(quality({ clever: 4, flow: 2 }))
+    expect(quality({ funny: 3, clever: 3, flow: 2 })).toBeGreaterThan(
+      quality({ funny: 3, flow: 2 }),
+    )
+  })
+
+  it('relevance is a bonus on top, never a requirement', () => {
+    const offTopicGreat = quality({ funny: 4, relevance: 0, flow: 3 })
+    const onTopicPlain = quality({ funny: 1, clever: 1, relevance: 4, flow: 3 })
+    expect(offTopicGreat).toBeGreaterThan(onTopicPlain)
+    expect(offTopicGreat).toBeGreaterThanOrEqual(8.5)
+    // Nothing for the general topic or less; up to 1.5 for flipping their words.
+    const bar = { funny: 2, clever: 1, flow: 2 }
+    expect(quality({ ...bar, relevance: 2 })).toBe(quality({ ...bar, relevance: 0 }))
+    expect(quality({ ...bar, relevance: 4 }) - quality({ ...bar, relevance: 2 })).toBeCloseTo(1.5)
+  })
+
+  it('rejects injection attempts and gibberish, and says which', () => {
+    const base = { funny: 4, clever: 4, relevance: 4, flow: 4 }
+    const verdict = (nouls: object) => verdictFrom(answers(base, nouls))
+    expect(verdict({ injection: 0.7 })).toMatchObject({ rejected: true, rejectedFor: 'injection' })
+    expect(verdict({ gibberish: 0.9 })).toMatchObject({ rejected: true, rejectedFor: 'gibberish' })
+    // Keyboard mashing often trips the injection question too; gibberish wins.
+    expect(verdict({ gibberish: 0.9, injection: 0.7 }).rejectedFor).toBe('gibberish')
+    expect(verdict({ injection: 0.2, gibberish: 0.3 })).toMatchObject({
+      rejected: false,
+      rejectedFor: null,
+    })
   })
 
   it('every score question lists exactly 5 levels', () => {
@@ -93,7 +124,7 @@ describe('judgeWithJev', () => {
       200,
       {
         model: 'jev-1.13.0',
-        answers: answers({ wit: 3, relevance: 3, flow: 2 }),
+        answers: answers({ funny: 2, relevance: 2, flow: 2 }),
         usage: { input_tokens: 812, output_tokens: 0 },
       },
       seen,
@@ -108,7 +139,8 @@ describe('judgeWithJev', () => {
       inputTokens: 812,
       rejected: false,
     })
-    expect(result.quality).toBeCloseTo(7)
+    expect(result.quality).toBeCloseTo(5)
+    expect(result.marks).toEqual({ funny: 5, clever: 0, flow: 5, relevance: 5 })
     expect(seen[0]).toMatchObject({
       state: { enemy_bar: thugBar, player_bar: 'bmy bar/b', rhyme_check: 'perfect rhyme' },
       model: 'jev-latest',
@@ -125,6 +157,8 @@ describe('judgeWithJev', () => {
         judged: false,
         quality: CYPHER.unjudgedQuality,
         rejected: false,
+        marks: null,
+        rejectedFor: null,
       })
     }
   })
@@ -138,7 +172,7 @@ describe('judgeWithJev', () => {
         new Response(
           JSON.stringify({
             model: 'jev-1.13.0',
-            answers: answers({ wit: 3, relevance: 3, flow: 2 }),
+            answers: answers({ funny: 3, relevance: 3, flow: 2 }),
             usage: { input_tokens: 812, output_tokens: 0 },
           }),
           { status: statuses.shift() ?? 500, headers: { 'content-type': 'application/json' } },
@@ -221,8 +255,10 @@ describe('judgeBar', () => {
             rhymesByEar: 1,
             rejected: false,
             model: 'm',
-            answers: answers({ wit: 3, relevance: 3, flow: 3 }),
+            answers: answers({ funny: 3, clever: 3, relevance: 3, flow: 3 }),
             inputTokens: 1,
+            marks: { funny: 7.5, clever: 7.5, flow: 7.5, relevance: 7.5 },
+            rejectedFor: null,
           }
         },
         now: () => 1000,
@@ -235,6 +271,8 @@ describe('judgeBar', () => {
       quality: 8,
       rejected: false,
       judged: true,
+      marks: { funny: 7.5, clever: 7.5, flow: 7.5, relevance: 7.5 },
+      rejectedFor: null,
     })
     expect(log).toMatchObject({ playerId: 'p1', enemyBar: thugBar, latencyMs: 0 })
   })
@@ -249,8 +287,10 @@ describe('judgeBar', () => {
           rhymesByEar: 1,
           rejected: false,
           model: 'm',
-          answers: answers({ wit: 2, relevance: 2, flow: 2 }),
+          answers: answers({ funny: 2, relevance: 2, flow: 2 }),
           inputTokens: 1,
+          marks: { funny: 5, clever: 0, flow: 5, relevance: 5 },
+          rejectedFor: null,
         }),
       },
     )
@@ -266,6 +306,8 @@ describe('judgeBar', () => {
           quality: 5,
           rhymesByEar: 0,
           rejected: false,
+          marks: null,
+          rejectedFor: null,
           error: 'no key',
         }),
       },
@@ -336,6 +378,8 @@ describe('logBar', () => {
           quality: 5,
           rhymesByEar: 0,
           rejected: false,
+          marks: null,
+          rejectedFor: null,
           error: 'x',
         }),
       },

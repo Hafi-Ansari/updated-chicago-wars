@@ -6,7 +6,7 @@
 
 import { CYPHERS } from '../src/content/cyphers.js'
 import { cleanBar } from '../src/engine/bars.js'
-import type { EnemyKind } from '../src/engine/types.js'
+import type { EnemyKind, Marks, Rejection } from '../src/engine/types.js'
 import { type JevInput, type JevResult, judgeWithJev } from './jev.js'
 import { type RhymeResult, type RhymeType, rhymeScore } from './rhyme.js'
 
@@ -27,6 +27,9 @@ export interface JudgeResponse {
   rejected: boolean
   /** False when Jev couldn't answer and the quality is a neutral fallback. */
   judged: boolean
+  /** What Jev heard (0-10 each), for the callouts; null when it didn't answer. */
+  marks: Marks | null
+  rejectedFor: Rejection | null
 }
 
 export interface BarLogEntry {
@@ -103,6 +106,8 @@ export async function judgeBar(
     quality: round(jev.quality, 1),
     rejected: jev.rejected,
     judged: jev.judged,
+    marks: jev.marks,
+    rejectedFor: jev.rejectedFor,
   }
   return {
     response,

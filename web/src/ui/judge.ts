@@ -3,7 +3,7 @@
  * if the judge can't be reached, typing gives way to picking a line.
  */
 
-import type { EnemyKind } from '../engine'
+import type { EnemyKind, Marks, Rejection } from '../engine'
 
 export interface Verdict {
   rhyme: number
@@ -11,6 +11,9 @@ export interface Verdict {
   rejected: boolean
   /** False when the judge model couldn't answer and only the rhyme was scored. */
   judged: boolean
+  /** What the judge heard, for the callouts (absent from older servers). */
+  marks?: Marks | null
+  rejectedFor?: Rejection | null
 }
 
 const ENDPOINT = '/api/judge-bar'
@@ -61,5 +64,24 @@ export async function judgeBar(
     quality: Number(data.quality) || 0,
     rejected: data.rejected === true,
     judged: data.judged === true,
+    marks: marksFrom(data.marks),
+    rejectedFor:
+      data.rejectedFor === 'gibberish' || data.rejectedFor === 'injection'
+        ? data.rejectedFor
+        : null,
+  }
+}
+
+function marksFrom(raw: unknown): Marks | null {
+  if (typeof raw !== 'object' || raw === null) return null
+  const mark = (key: keyof Marks) => {
+    const value = Number((raw as Record<string, unknown>)[key])
+    return Number.isFinite(value) ? Math.min(10, Math.max(0, value)) : 0
+  }
+  return {
+    funny: mark('funny'),
+    clever: mark('clever'),
+    flow: mark('flow'),
+    relevance: mark('relevance'),
   }
 }

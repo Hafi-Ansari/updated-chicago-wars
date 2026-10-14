@@ -195,6 +195,9 @@ export function describe(event: GameEvent, names: Names): Line | null {
     case 'cypher':
       // The engine narrates the crowd's reaction; this event drives the stage and sound.
       return null
+    case 'callout':
+      // Flashed on the stage (CALLOUT_TEXT), not written in the text box.
+      return null
     case 'locked':
       return {
         text:

@@ -13,6 +13,7 @@
 
 import { noul, type SystemOneResult, score, TypeSafeClient } from '@typesafe-ai/sdk'
 import { CYPHER } from '../src/engine/balance.js'
+import type { Marks, Rejection } from '../src/engine/types.js'
 
 export const JEV_MODEL = 'jev-latest'
 /** Total time Jev gets, retries included, before the bar is scored on its rhyme alone. */
@@ -31,14 +32,36 @@ export const JEV_RETRY = {
   httpStatuses: new Set([408, 429, 499, ...Array.from({ length: 100 }, (_, i) => 500 + i)]),
 }
 
+/**
+ * How the answers become a 0-10 quality. A bar lands on its punch (the better of funny and
+ * clever, a little more if it's both) and its flow. Answering the opponent is a bonus on top,
+ * never a requirement: nothing for staying on the general topic or less, up to `relevanceBonus`
+ * for flipping their own words.
+ */
+export const JEV_QUALITY = { punch: 0.7, flow: 0.3, both: 0.25, relevanceBonus: 1.5 }
+
 export const JEV_QUESTIONS = {
-  wit: score("How clever and funny is the player's comeback, as a reply in a rap battle?", [
-    'Not clever: no joke, no wordplay, no punchline at all.',
-    'Weak: a flat or obvious insult anyone could say.',
-    'Decent: a fair jab or a simple bit of wordplay.',
-    'Clever: a sharp punchline or wordplay that really lands.',
-    "Brilliant: a hilarious or surprising punchline, a double meaning, or a flip of the opponent's own words.",
-  ]),
+  // Funny and clever are separate so a crude joke that kills can score as high as wordplay.
+  funny: score(
+    "How hard would a battle-rap crowd laugh at the player's bar? Battle-rap crowds love crude, juvenile, savage and dirty jokes, roasts and yo-mama jokes. Judge only how funny it is, not how tasteful.",
+    [
+      'Nobody laughs: there is no joke, or the joke makes no sense.',
+      'A groan: the joke is stale, obvious or falls flat.',
+      'A few laughs: a fair joke or roast.',
+      'Big laughs: a sharp roast, or a crude joke that really lands.',
+      'The crowd loses it: hysterical, savage or outrageously funny.',
+    ],
+  ),
+  clever: score(
+    "How clever is the player's bar: wordplay, punchlines, double meanings, metaphors, or a flip of the opponent's words?",
+    [
+      'No wordplay and no punchline.',
+      'Obvious: a plain statement or a cliché.',
+      'Some craft: a simple pun, comparison or punchline.',
+      'Clever: wordplay or a punchline that really lands.',
+      "Brilliant: a double meaning, a surprising twist, or a flip of the opponent's own words.",
+    ],
+  ),
   relevance: score("How directly does the player's bar answer what the opponent just said?", [
     "Ignores the opponent's bar completely.",
     "Barely related to the opponent's bar.",
@@ -82,6 +105,9 @@ interface Verdict {
   /** 0-1, Jev's probability that the bar rhymes by ear. */
   rhymesByEar: number
   rejected: boolean
+  /** What Jev heard, for the callouts; null when Jev didn't answer. */
+  marks: Marks | null
+  rejectedFor: Rejection | null
 }
 
 export type JevResult =
@@ -98,20 +124,38 @@ export function sanitizeBar(text: string): string {
 
 const LEVELS = 5
 const toTen = (level: number) => (Math.min(LEVELS - 1, Math.max(0, level)) / (LEVELS - 1)) * 10
+const round1 = (n: number) => Math.round(n * 10) / 10
 
-/** Jev's answers as a quality score (wit counts most) and a reject flag. */
+/** Jev's answers as marks, a quality score (see JEV_QUALITY) and a reject flag. */
 export function verdictFrom(answers: JevAnswers): Verdict {
-  const quality =
-    0.45 * toTen(answers.wit.score) +
-    0.35 * toTen(answers.relevance.score) +
-    0.2 * toTen(answers.flow.score)
-  const rejected =
-    answers.injection.noul >= JEV_THRESHOLDS.injection ||
+  const marks: Marks = {
+    funny: round1(toTen(answers.funny.score)),
+    clever: round1(toTen(answers.clever.score)),
+    flow: round1(toTen(answers.flow.score)),
+    relevance: round1(toTen(answers.relevance.score)),
+  }
+  const best = Math.max(marks.funny, marks.clever)
+  const punch = Math.min(10, best + JEV_QUALITY.both * Math.min(marks.funny, marks.clever))
+  const answered = Math.min(1, Math.max(0, (marks.relevance - 5) / 5))
+  const quality = Math.min(
+    10,
+    JEV_QUALITY.punch * punch +
+      JEV_QUALITY.flow * marks.flow +
+      JEV_QUALITY.relevanceBonus * answered,
+  )
+  // Gibberish first: keyboard mashing often looks like an attempt to game the judge too.
+  const rejectedFor: Rejection | null =
     answers.gibberish.noul >= JEV_THRESHOLDS.gibberish
+      ? 'gibberish'
+      : answers.injection.noul >= JEV_THRESHOLDS.injection
+        ? 'injection'
+        : null
   return {
-    quality: Math.round(quality * 10) / 10,
+    quality: round1(quality),
     rhymesByEar: answers.rhymes_by_ear.noul,
-    rejected,
+    rejected: rejectedFor !== null,
+    marks,
+    rejectedFor,
   }
 }
 
@@ -159,6 +203,8 @@ export async function judgeWithJev(
       quality: CYPHER.unjudgedQuality,
       rhymesByEar: 0,
       rejected: false,
+      marks: null,
+      rejectedFor: null,
       error: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
     }
   }

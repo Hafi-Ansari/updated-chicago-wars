@@ -220,10 +220,47 @@ export interface CypherState {
 
 export type CypherTier = 'flop' | 'decent' | 'fire' | 'legendary'
 
+/** What the judge heard in a typed bar, each 0-10. */
+export interface Marks {
+  funny: number
+  clever: number
+  flow: number
+  relevance: number
+}
+
+/** Why the judge threw a bar out. */
+export type Rejection = 'gibberish' | 'injection'
+
+/** The judge's breakdown, flashed between the hero's bar and the crowd's reaction. */
+export type Callout =
+  | 'perfectRhyme'
+  | 'slantRhyme'
+  | 'multiRhyme'
+  | 'funny'
+  | 'clever'
+  | 'flipped'
+  | 'flow'
+  | 'noRhyme'
+  | 'noPunchline'
+  | 'halfBar'
+  | 'dookie'
+  | 'forSale'
+
 /** The hero's comeback, judged by the UI before it reaches the engine. */
 export type BarResult =
-  /** Typed and judged on the server: rhyme 0-1.4, quality 0-10. */
-  | { kind: 'typed'; text: string; rhyme: number; quality: number; rejected: boolean }
+  /**
+   * Typed and judged on the server: rhyme 0-1.4, quality 0-10. Marks and the rejection reason
+   * are only there when the judge model answered; they drive the callouts, not the score.
+   */
+  | {
+      kind: 'typed'
+      text: string
+      rhyme: number
+      quality: number
+      rejected: boolean
+      marks?: Marks | null
+      rejectedFor?: Rejection | null
+    }
   /** One of the prompt's three authored answers (index into its `answers`). */
   | { kind: 'picked'; answer: number }
   /** The clock ran out with nothing said. */
@@ -347,6 +384,7 @@ export type GameEvent =
   | { type: 'moveLearned'; move: MoveId; replaced?: MoveId }
   | { type: 'skillLearned'; skill: SkillId }
   | { type: 'rapUnlocked' }
+  | { type: 'callout'; callout: Callout }
   | { type: 'cypher'; tier: CypherTier }
   | { type: 'locked'; what: 'move'; move: MoveId }
   | { type: 'locked'; what: 'gear'; skill: SkillId }
