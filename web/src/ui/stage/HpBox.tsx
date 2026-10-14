@@ -1,4 +1,4 @@
-import type { Stats, StatusEffect, StatusKind } from '../../engine'
+import type { Stats, StatusKind } from '../../engine'
 
 const STATUS_TAGS: Record<StatusKind, { label: string; color: string }> = {
   stunned: { label: 'STN', color: 'var(--hp-mid)' },
@@ -23,7 +23,8 @@ interface HpBoxProps {
   hp: number
   maxHp: number
   showNumbers: boolean
-  statuses: StatusEffect[]
+  /** The tags to show, as of the event playing now (see Display in useGame). */
+  statuses: StatusKind[]
   /** Revealed stats (Aviator Glasses). */
   stats?: Stats | undefined
   side: 'hero' | 'enemy'
@@ -63,9 +64,9 @@ export function HpBox({
       {(statuses.length > 0 || showNumbers) && (
         <div className="hpbox__foot">
           <span className="hpbox__tags">
-            {statuses.map((s) => (
-              <span key={s.kind} className="tag" style={{ background: STATUS_TAGS[s.kind].color }}>
-                {STATUS_TAGS[s.kind].label}
+            {statuses.map((kind) => (
+              <span key={kind} className="tag" style={{ background: STATUS_TAGS[kind].color }}>
+                {STATUS_TAGS[kind].label}
               </span>
             ))}
           </span>

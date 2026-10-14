@@ -93,8 +93,9 @@ src/ui/        React: plays events back (typewriter, animations), dispatches act
   opening odds) sit next to their content. After changing either, run `npm run sim`.
   `test/balance.sim.test.ts` fails if the win rate, fight length or run length drift out of range.
 - **Playback**: `src/ui/useGame.ts` runs `step` right away but plays the resulting events one at
-  a time. HP bars and clout count up event by event, and the battle stays on screen until its
-  final blows have played.
+  a time. HP bars, clout and status tags catch up event by event (a tag shows when its status
+  lands, not when the turn starts), and the battle stays on screen until its final blows have
+  played.
 
 ## Battle Rap judging
 

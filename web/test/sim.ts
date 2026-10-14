@@ -18,6 +18,7 @@ import type {
   BattleState,
   BoostableStat,
   CypherTier,
+  GameEvent,
   GameState,
   Hero,
   MoveId,
@@ -39,6 +40,8 @@ export interface RunResult {
 export interface SimOptions {
   /** Answer Battle Rap by typing (sampled quality and rhyme) instead of picking. */
   typed?: boolean
+  /** Sees every step the bot takes (for tests that check invariants over whole runs). */
+  onStep?: (before: GameState, after: GameState, events: GameEvent[]) => void
 }
 
 /**
@@ -265,6 +268,7 @@ export function simulateRun(seed: number, options: SimOptions = {}): RunResult {
     }
 
     const { state: next, events } = step(state, action)
+    options.onStep?.(state, next, events)
     for (const e of events) if (e.type === 'cypher') cyphers[e.tier] += 1
     if (next === state) {
       throw new Error(

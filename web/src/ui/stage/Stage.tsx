@@ -189,7 +189,7 @@ export function Stage({ state, current, display, foeHidden }: StageProps) {
                 hp={display.enemyHp}
                 maxHp={battle.enemy.stats.maxHp}
                 showNumbers={hero.skills.includes('airpods')}
-                statuses={battle.enemy.statuses}
+                statuses={display.enemyStatuses}
                 stats={battle.revealed ? battle.enemy.stats : undefined}
               />
             ) : (
@@ -214,7 +214,7 @@ export function Stage({ state, current, display, foeHidden }: StageProps) {
           hp={display.heroHp}
           maxHp={hero.stats.maxHp}
           showNumbers
-          statuses={hero.statuses}
+          statuses={display.heroStatuses}
         />
 
         {float && (

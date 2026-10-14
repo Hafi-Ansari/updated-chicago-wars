@@ -4,17 +4,28 @@
  * Every player action runs `step()` immediately, but the resulting events are
  * *played back* one at a time (typewriter text, hit flashes, HP drains) before
  * the player can act again. While events play, the screen shows `display`
- * values (HP, clout) that catch up event by event instead of jumping to the end.
+ * values (HP, clout, status tags) that catch up event by event instead of
+ * jumping to the end.
  */
 
 import { useCallback, useEffect, useReducer } from 'react'
-import { type Action, type GameEvent, type GameState, newGame, step } from '../engine'
+import {
+  type Action,
+  type GameEvent,
+  type GameState,
+  newGame,
+  type StatusKind,
+  step,
+} from '../engine'
 import { loadSave, writeSave } from './storage'
 
 export interface Display {
   heroHp: number
   enemyHp: number
   clout: number
+  /** Status tags on each HP box, so a status shows when its event plays, not before. */
+  heroStatuses: StatusKind[]
+  enemyStatuses: StatusKind[]
 }
 
 export interface PlayingEvent {
@@ -41,21 +52,23 @@ type ViewAction =
   | { type: 'advance' }
   | { type: 'quit' }
 
-const displayOf = (state: GameState | null): Display => ({
-  heroHp: state?.hero.hp ?? 0,
-  enemyHp: state?.phase.kind === 'battle' ? state.phase.battle.enemy.hp : 0,
-  clout: state?.hero.clout ?? 0,
-})
-
-/** Pops the next event off the queue and applies its effect on displayed numbers. */
-function playNext(view: ViewState): ViewState {
-  const [event, ...queue] = view.queue
-  if (!event) {
-    // Playback finished: catch the screen up with the engine.
-    return { ...view, current: null, shown: view.game, display: displayOf(view.game) }
+export const displayOf = (state: GameState | null): Display => {
+  const battle = state?.phase.kind === 'battle' ? state.phase.battle : null
+  return {
+    heroHp: state?.hero.hp ?? 0,
+    enemyHp: battle?.enemy.hp ?? 0,
+    clout: state?.hero.clout ?? 0,
+    heroStatuses: state?.hero.statuses.map((s) => s.kind) ?? [],
+    enemyStatuses: battle?.enemy.statuses.map((s) => s.kind) ?? [],
   }
+}
 
-  const display = { ...view.display }
+/**
+ * What the screen shows once one more event has played. `game` is the engine's state after
+ * the whole action, for what a new fight starts with.
+ */
+export function displayAfter(display: Display, event: GameEvent, game: GameState | null): Display {
+  const next = { ...display }
   switch (event.type) {
     case 'hit':
     case 'tick':
@@ -63,18 +76,37 @@ function playNext(view: ViewState): ViewState {
     case 'selfHit':
     case 'recoil':
     case 'reflect':
-      if (event.target === 'hero') display.heroHp = event.hpAfter
-      else display.enemyHp = event.hpAfter
+      if (event.target === 'hero') next.heroHp = event.hpAfter
+      else next.enemyHp = event.hpAfter
       break
     case 'clout':
-      display.clout = event.total
+      next.clout = event.total
       break
+    case 'status': {
+      const key = event.target === 'hero' ? 'heroStatuses' : 'enemyStatuses'
+      const shown = next[key]
+      if (event.change === 'expired') next[key] = shown.filter((kind) => kind !== event.status)
+      // A refreshed status keeps its place, so the tags don't shuffle.
+      else if (!shown.includes(event.status)) next[key] = [...shown, event.status]
+      break
+    }
     case 'appear':
-      // A new fight: show the enemy at full health as it slides in.
-      if (view.game?.phase.kind === 'battle')
-        display.enemyHp = view.game.phase.battle.enemy.stats.maxHp
+      // A new fight: show the enemy at full health, with a clean slate, as it slides in.
+      if (game?.phase.kind === 'battle') next.enemyHp = game.phase.battle.enemy.stats.maxHp
+      next.enemyStatuses = []
       break
   }
+  return next
+}
+
+/** Pops the next event off the queue and applies its effect on what's displayed. */
+function playNext(view: ViewState): ViewState {
+  const [event, ...queue] = view.queue
+  if (!event) {
+    // Playback finished: catch the screen up with the engine.
+    return { ...view, current: null, shown: view.game, display: displayOf(view.game) }
+  }
+  const display = displayAfter(view.display, event, view.game)
   return { ...view, queue, display, current: { id: view.nextId, event }, nextId: view.nextId + 1 }
 }
 
