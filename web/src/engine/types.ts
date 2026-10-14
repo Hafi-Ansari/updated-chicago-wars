@@ -238,6 +238,7 @@ export type Callout =
   | 'multiRhyme'
   | 'funny'
   | 'clever'
+  | 'explicit'
   | 'flipped'
   | 'flow'
   | 'noRhyme'

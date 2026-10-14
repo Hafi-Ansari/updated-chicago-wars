@@ -6,6 +6,7 @@
  */
 
 import { CYPHERS } from '../../content/cyphers'
+import { PROFANITY } from '../../content/profanity'
 import type { CypherPrompt } from '../../content/types'
 import { CYPHER, CYPHER_EFFECTS } from '../balance'
 import { cleanBar, isHalfBar } from '../bars'
@@ -51,10 +52,16 @@ export function startCypher(ctx: CombatContext): void {
 const clamp = (value: number, min: number, max: number) =>
   Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : min
 
+/** Whether a bar cusses (swear words, not slurs), for the crowd's profanity bonus. */
+export function isProfane(text: string): boolean {
+  const lower = text.toLowerCase()
+  return PROFANITY.some((word) => word.test(lower))
+}
+
 /**
- * A bar's score: quality scaled by how well it rhymes (no rhyme keeps 60%), plus up to +1
- * for a multi-syllable rhyme. One line is half a bar and keeps half. Picked answers score by
- * their authored tier.
+ * A bar's score: quality (plus the profanity bonus if it cusses) scaled by how well it rhymes
+ * (no rhyme keeps 60%), plus up to +1 for a multi-syllable rhyme. One line is half a bar and
+ * keeps half. Picked answers score by their authored tier.
  */
 export function barScore(bar: BarResult, prompt: CypherPrompt): number {
   switch (bar.kind) {
@@ -67,7 +74,8 @@ export function barScore(bar: BarResult, prompt: CypherPrompt): number {
     case 'typed': {
       const text = cleanBar(bar.text)
       if (bar.rejected || !text) return 0
-      const quality = clamp(bar.quality, 0, 10)
+      const bonus = isProfane(text) ? CYPHER.profanityBonus : 0
+      const quality = clamp(clamp(bar.quality, 0, 10) + bonus, 0, 10)
       const rhyme = clamp(bar.rhyme, 0, 1.4)
       const score = quality * (0.6 + 0.4 * Math.min(rhyme, 1)) + Math.max(0, rhyme - 1) * 2.5
       return isHalfBar(text) ? score * CYPHER.halfBar : score
@@ -84,7 +92,7 @@ export function tierOf(score: number): CypherTier {
 }
 
 /**
- * The judge's breakdown of a typed bar: hits (the rhyme, then funny, clever, flipped, flow),
+ * The judge's breakdown of a typed bar: hits (the rhyme, funny, clever, explicit, flipped, flow),
  * then misses. Misses always show; over the cap, the last hits drop, flow first. A bar thrown
  * out, or with nothing in it at all, gets only the verdict. Picked answers and timeouts aren't
  * judged, so they get none.
@@ -107,15 +115,14 @@ export function calloutsFor(bar: BarResult): Callout[] {
   else if (rhyme >= 0.5) hits.push('slantRhyme')
   else misses.push('noRhyme')
 
-  // No marks when the judge model didn't answer: only the rhyme is known.
-  if (marks) {
-    const punch = Math.max(marks.funny, marks.clever)
-    if (marks.funny >= hit) hits.push('funny')
-    if (marks.clever >= hit) hits.push('clever')
-    if (marks.relevance >= flipped && punch >= hit) hits.push('flipped')
-    if (marks.flow >= flow) hits.push('flow')
-    if (punch < noPunchline) misses.push('noPunchline')
-  }
+  // No marks when the judge model didn't answer: only the rhyme (and any cussing) is known.
+  const punch = marks ? Math.max(marks.funny, marks.clever) : 0
+  if (marks && marks.funny >= hit) hits.push('funny')
+  if (marks && marks.clever >= hit) hits.push('clever')
+  if (isProfane(text)) hits.push('explicit')
+  if (marks && marks.relevance >= flipped && punch >= hit) hits.push('flipped')
+  if (marks && marks.flow >= flow) hits.push('flow')
+  if (marks && punch < noPunchline) misses.push('noPunchline')
   if (isHalfBar(text)) misses.push('halfBar')
   return [...hits.slice(0, Math.max(0, max - misses.length)), ...misses]
 }

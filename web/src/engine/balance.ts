@@ -81,6 +81,8 @@ export const CYPHER = {
   picked: { flop: 1, decent: 4.5, fire: 7 },
   /** A typed answer of one line is half a bar, and keeps this share of its score. */
   halfBar: 0.5,
+  /** Added to a typed bar's 0-10 quality when it cusses (PROFANITY in src/content/profanity.ts). */
+  profanityBonus: 1,
   /** Quality assumed when the judge couldn't answer, so a rhyme alone tops out at decent. */
   unjudgedQuality: 5,
   /**

@@ -24,6 +24,7 @@ export const CALLOUTS: Record<Callout, { text: string; kind: 'hit' | 'miss' | 'd
   multiRhyme: { text: 'MULTI-SYLLABLE!', kind: 'hit' },
   funny: { text: 'FUNNY!', kind: 'hit' },
   clever: { text: 'CLEVER!', kind: 'hit' },
+  explicit: { text: 'PARENTAL ADVISORY!', kind: 'hit' },
   flipped: { text: 'FLIPPED IT!', kind: 'hit' },
   flow: { text: 'FLOWED WELL!', kind: 'hit' },
   noRhyme: { text: "DIDN'T RHYME!", kind: 'miss' },

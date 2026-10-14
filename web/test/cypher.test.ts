@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { CYPHERS } from '../src/content/cyphers'
 import { CYPHER } from '../src/engine/balance'
 import { cleanBar, MAX_BAR_LINE_LENGTH } from '../src/engine/bars'
-import { barScore, calloutsFor, canBattleRap, tierOf } from '../src/engine/combat/cypher'
+import { barScore, calloutsFor, canBattleRap, isProfane, tierOf } from '../src/engine/combat/cypher'
 import { migrateSave } from '../src/engine/save'
 import { newGame, step } from '../src/engine/step'
 import type { BarResult, BattleState, GameEvent, GameState } from '../src/engine/types'
@@ -203,6 +203,21 @@ describe('callouts', () => {
 
   it("doesn't call a plain direct answer a flip, or ordinary flow smooth", () => {
     expect(calloutsFor(bar(marks(2, 3, 7, 10)))).toEqual(['perfectRhyme', 'noPunchline'])
+  })
+
+  it('cussing earns PARENTAL ADVISORY and a modest bonus', () => {
+    const prompt = CYPHERS.thug[0]
+    if (!prompt) throw new Error('missing prompt')
+    const cuss = bar({
+      text: "You ain't shit, you're a f*cking clown\nso sit your ass down",
+      quality: 5,
+      ...marks(5, 3, 6, 5),
+    })
+    expect(calloutsFor(cuss)).toContain('explicit')
+    expect(barScore(cuss, prompt)).toBeCloseTo(5 + CYPHER.profanityBonus)
+    for (const clean of ['Your class is a mess', 'shift your hello at the grass', 'Dickens']) {
+      expect(isProfane(clean), clean).toBe(false)
+    }
   })
 
   it('calls a bar with nothing in it dookie, even if the judge let it through', () => {
