@@ -68,11 +68,13 @@ src/ui/        React: plays events back (typewriter, animations), dispatches act
   the lines in battle rap's terms, the setup then the punchline, and Enter moves from one to the
   other; one line counts as half a bar and scores half. Before the crowd reacts, the judges'
   callouts flash on the stage one at a time, so players see why: PERFECT RHYME!, FUNNY!, CLEVER!,
-  FLIPPED IT!, or WHERE'S THE PUNCHLINE?, and THAT WAS STRAIGHT DOOKIE! for gibberish. The bar is
-  scored into a tier (flop, decent, fire, legendary) whose effects can't be dodged; a flop gets
-  the hero booed (shook) and the enemy still acts. Prompts and pick-mode answers are in
-  `src/content/cyphers.ts`, scoring in `src/engine/combat/cypher.ts`, tuning in `CYPHER` and
-  `CYPHER_EFFECTS` (`balance.ts`). See [Battle Rap judging](#battle-rap-judging).
+  PARENTAL ADVISORY! (cussing earns a small bonus), FLIPPED IT!, or WHERE'S THE PUNCHLINE?, and
+  THAT WAS STRAIGHT DOOKIE! for gibberish. The bar is scored into a tier (flop, decent, fire,
+  legendary) whose effects can't be dodged; a flop gets the hero booed (shook) and the enemy
+  still acts. Every enemy type has 10 bars to spit (crude, clever and in character), each with
+  three pick-mode answers, in `src/content/cyphers.ts`; scoring is in
+  `src/engine/combat/cypher.ts`, tuning in `CYPHER` and `CYPHER_EFFECTS` (`balance.ts`). See
+  [Battle Rap judging](#battle-rap-judging).
 - **Vendors** (Plug, Gangsta, hot dog cart) aren't random encounters. They're recurring
   characters you can visit once per block from the explore menu. Walking only leads to fights
   and street events.
@@ -119,8 +121,10 @@ browser. Shared server code lives in `server/`.
    after the response is sent, keeping the latest 100,000. No IP addresses are stored.
 
 Jev only judges taste. The game's rules are enforced in code, where they can't be argued with:
-the rhyme check above, and the two-line rule (`isHalfBar` in `src/engine/bars.ts`, applied by
-`barScore` in the engine). The endpoint also returns Jev's marks (funny, clever, flow and
+the rhyme check above, the two-line rule (`isHalfBar` in `src/engine/bars.ts`, applied by
+`barScore` in the engine), and the profanity bonus: a bar that cusses gets
+`CYPHER.profanityBonus` (+1) on its quality (swear words only, never slurs: `PROFANITY` in
+`src/content/profanity.ts`). The endpoint also returns Jev's marks (funny, clever, flow and
 relevance, 0–10) and why a bar was thrown out; the engine turns them into the callouts
 (`calloutsFor` in `src/engine/combat/cypher.ts`, thresholds in `CYPHER.callouts`), and the stage
 shows them (`CALLOUTS` in `src/ui/narration.ts`). The enemy's bar is looked up from game content
