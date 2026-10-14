@@ -78,11 +78,23 @@ export const CYPHER = {
   unlockBelow: 0.5,
   /** Minimum score for each tier; anything lower is a flop. */
   tiers: { decent: 3, fire: 6, legendary: 8.5 },
-  picked: { flop: 1, decent: 4.5, fire: 7 },
+  /**
+   * Picked answers score at their tier's floor, so they hit as hard as the tier does; only
+   * typed bars climb past it (powerPerPoint).
+   */
+  picked: { flop: 1, decent: 4, fire: 6 },
   /** A typed answer of one line is half a bar, and keeps this share of its score. */
   halfBar: 0.5,
   /** Added to a typed bar's 0-10 quality when it cusses (PROFANITY in src/content/profanity.ts). */
   profanityBonus: 1,
+  /**
+   * The better the bar, the harder it hits: a hit's power is the higher of its tier's and
+   * score x this. It climbs smoothly from 1.2 at the bottom of fire through 1.7 at legendary
+   * to 2.2 for a perfect multi-syllable bar, so a 9.9 legendary out-hits an 8.5.
+   */
+  powerPerPoint: 0.2,
+  /** The crowd tips fire and legendary bars this share of the enemy's clout reward. */
+  tips: { flop: 0, decent: 0, fire: 0.25, legendary: 0.5 },
   /** Quality assumed when the judge couldn't answer, so a rhyme alone tops out at decent. */
   unjudgedQuality: 5,
   /**

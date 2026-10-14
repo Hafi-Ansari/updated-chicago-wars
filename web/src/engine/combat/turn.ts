@@ -141,14 +141,15 @@ export function strikeOpening(ctx: CombatContext, target: OpeningTarget | 'brace
   )
   for (const line of result.text) narrate(ctx, line)
   applyEffects(ctx, result.winner, result.effects)
-  unlockRap(ctx)
-  rally(ctx)
+  afterTurn(ctx)
   return outcome(ctx)
 }
 
 /**
  * The hero answers a pending cypher, then the enemy takes its turn as usual. The bar is
- * the hero's move for the round, so it always comes first.
+ * the hero's move for the round, so it always comes first. The hero's statuses sit the rap
+ * out: nothing triggers (no stun, daze or bleed) and nothing counts down, so a bar always
+ * lands on its own merits and every status picks up where it left off next turn.
  */
 export function cypherRound(ctx: CombatContext, bar: BarResult): BattleOutcome {
   const cypher = ctx.battle.cypher
@@ -158,7 +159,8 @@ export function cypherRound(ctx: CombatContext, bar: BarResult): BattleOutcome {
   ctx.battle.round += 1
 
   const enemyAction = chooseEnemyAction(ctx)
-  takeTurn(ctx, 'hero', () => spitBar(ctx, cypher, bar))
+  spitBar(ctx, cypher, bar)
+  afterTurn(ctx)
   if (outcome(ctx) === 'ongoing') takeTurn(ctx, 'enemy', () => enemyAct(ctx, enemyAction))
   maybeOpening(ctx)
   return outcome(ctx)
@@ -177,7 +179,11 @@ function takeTurn(ctx: CombatContext, side: Side, act: () => void): void {
     else act()
   }
   endTurn(ctx, side)
-  // Battle Rap unlocks before the rally heals the enemy back above half.
+  afterTurn(ctx)
+}
+
+/** After any turn. Battle Rap unlocks before the rally heals the enemy back above half. */
+function afterTurn(ctx: CombatContext): void {
   unlockRap(ctx)
   rally(ctx)
 }

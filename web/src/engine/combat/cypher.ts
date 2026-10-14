@@ -161,6 +161,23 @@ export function calloutsFor(bar: BarResult): Callout[] {
   return [...hits.slice(0, Math.max(0, max - misses.length)), ...misses]
 }
 
+const TIPS: Record<CypherTier, string> = {
+  flop: '',
+  decent: '',
+  fire: 'The crowd tosses {hero} some clout!',
+  legendary: 'The crowd makes it rain on {hero}!',
+}
+
+/** Fire and legendary bars get the crowd tipping: a share of the enemy's clout reward. */
+function tipClout(ctx: CombatContext, tier: CypherTier): void {
+  const amount = Math.round(ctx.enemy.cloutReward * CYPHER.tips[tier])
+  if (amount <= 0) return
+  ctx.hero.clout += amount
+  ctx.run.cloutEarned += amount
+  ctx.emit({ type: 'narrate', text: fill(TIPS[tier], { hero: ctx.hero.name }), tone: 'reward' })
+  ctx.emit({ type: 'clout', amount, total: ctx.hero.clout })
+}
+
 const CROWD: Record<CypherTier, string> = {
   flop: 'The crowd boos {hero} off the mic!',
   decent: 'The crowd nods along. Solid.',
@@ -183,13 +200,23 @@ export function spitBar(ctx: CombatContext, cypher: CypherState, bar: BarResult)
   }
   for (const callout of calloutsFor(bar)) ctx.emit({ type: 'callout', callout })
 
-  const tier = tierOf(barScore(bar, prompt))
+  const score = barScore(bar, prompt)
+  const tier = tierOf(score)
   ctx.emit({ type: 'cypher', tier })
   ctx.emit({
     type: 'narrate',
     text: fill(CROWD[tier], { hero: ctx.hero.name }),
     tone: tier === 'flop' ? 'danger' : 'reward',
   })
-  applyEffects(ctx, 'hero', CYPHER_EFFECTS[tier])
+  // The tier decides what lands; the score decides how hard the hit is.
+  const power = score * CYPHER.powerPerPoint
+  applyEffects(
+    ctx,
+    'hero',
+    CYPHER_EFFECTS[tier].map((e) =>
+      e.type === 'damage' ? { ...e, power: Math.max(e.power, power) } : e,
+    ),
+  )
+  tipClout(ctx, tier)
   return tier
 }

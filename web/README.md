@@ -71,7 +71,9 @@ src/ui/        React: plays events back (typewriter, animations), dispatches act
   PARENTAL ADVISORY! (cussing earns a small bonus), FLIPPED IT!, or WHERE'S THE PUNCHLINE?, and
   THAT WAS STRAIGHT DOOKIE! for gibberish. The bar is scored into a tier (flop, decent, fire,
   legendary) whose effects can't be dodged; a flop gets the hero booed (shook) and the enemy
-  still acts. Every enemy type has 10 bars to spit (crude, clever and in character), each with
+  still acts. Better bars hit harder (a typed bar's score sets the hit's power, up to 2.2×), and
+  the crowd tips fire and legendary bars a share of the enemy's clout. The hero's statuses sit
+  the rap out: no stun, daze or bleed on that turn, and nothing counts down. Every enemy type has 10 bars to spit (crude, clever and in character), each with
   three pick-mode answers, in `src/content/cyphers.ts`; scoring is in
   `src/engine/combat/cypher.ts`, tuning in `CYPHER` and `CYPHER_EFFECTS` (`balance.ts`). See
   [Battle Rap judging](#battle-rap-judging).

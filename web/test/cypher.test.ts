@@ -97,6 +97,56 @@ describe('a cypher', () => {
     expect(step(started, { type: 'battleRap' }).state).toBe(started)
   })
 
+  it("the hero's statuses sit the rap out: no stun, daze or bleed, and nothing counts down", () => {
+    for (let seed = 1; seed <= 30; seed++) {
+      const base = fight(seed)
+      const hero = {
+        ...base.hero,
+        statuses: [
+          { kind: 'dazed' as const, turns: 2 },
+          { kind: 'bleeding' as const, turns: 2 },
+          { kind: 'stunned' as const, turns: 1 },
+        ],
+      }
+      const started = step({ ...base, hero }, { type: 'battleRap' }).state
+      const prompt = CYPHERS.thug[battleOf(started).cypher?.prompt ?? 0]
+      const fire = prompt?.answers.findIndex((a) => a.tier === 'fire') ?? -1
+      const { state, events } = step(started, {
+        type: 'spit',
+        bar: { kind: 'picked', answer: fire },
+      })
+
+      expect(events).toContainEqual({ type: 'cypher', tier: 'fire' })
+      expect(events.some((e) => e.type === 'selfHit' && e.target === 'hero')).toBe(false)
+      expect(events.some((e) => e.type === 'tick' && e.target === 'hero')).toBe(false)
+      const turns = (kind: string) => state.hero.statuses.find((s) => s.kind === kind)?.turns ?? 0
+      expect([turns('dazed'), turns('bleeding'), turns('stunned')]).toEqual([2, 2, 1])
+    }
+  })
+
+  it('better bars hit harder, and the crowd tips fire and legendary bars', () => {
+    const started = step(fight(), { type: 'battleRap' }).state
+    const { cloutReward } = battleOf(started).enemy
+    const spit = (quality: number) =>
+      step(started, {
+        type: 'spit',
+        bar: { kind: 'typed', text: 'line one\nline two', quality, rhyme: 1, rejected: false },
+      }).events
+    const heroHit = (events: GameEvent[]) =>
+      events.find((e) => e.type === 'hit' && e.attacker === 'hero')
+    const tipped = (events: GameEvent[]) =>
+      events.filter((e) => e.type === 'clout').reduce((sum, e) => sum + (e.amount ?? 0), 0)
+
+    // Same seed, same rolls: an 8.6 and a perfect 10 are both legendary, but the 10 hits harder.
+    const low = heroHit(spit(8.6))
+    const high = heroHit(spit(10))
+    expect(low?.type === 'hit' && high?.type === 'hit' && high.damage > low.damage).toBe(true)
+
+    expect(tipped(spit(4))).toBe(0)
+    expect(tipped(spit(7))).toBe(Math.round(cloutReward * CYPHER.tips.fire))
+    expect(tipped(spit(9.5))).toBe(Math.round(cloutReward * CYPHER.tips.legendary))
+  })
+
   it('a fire comeback always lands, rattles the enemy, and the enemy still gets its turn', () => {
     for (let seed = 1; seed <= 15; seed++) {
       const started = step(fight(seed), { type: 'battleRap' }).state
