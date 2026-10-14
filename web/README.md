@@ -123,8 +123,10 @@ browser. Shared server code lives in `server/`.
 Jev only judges taste. The game's rules are enforced in code, where they can't be argued with:
 the rhyme check above, the two-line rule (`isHalfBar` in `src/engine/bars.ts`, applied by
 `barScore` in the engine), and the profanity bonus: a bar that cusses gets
-`CYPHER.profanityBonus` (+1) on its quality (swear words only, never slurs: `PROFANITY` in
-`src/content/profanity.ts`). The endpoint also returns Jev's marks (funny, clever, flow and
+`CYPHER.profanityBonus` (+1) on its quality. `PROFANITY` (`src/content/profanity.ts`) is a broad
+list of swear words, never slurs: English (US and UK), sexual and bathroom terms, acronyms
+(wtf, stfu), and Spanish, Polish, French, German and Italian swears. They count stretched
+(fuuuck), censored (f*ck, a**hole), in leetspeak (sh1t, a$$) and without accents. The endpoint also returns Jev's marks (funny, clever, flow and
 relevance, 0–10) and why a bar was thrown out; the engine turns them into the callouts
 (`calloutsFor` in `src/engine/combat/cypher.ts`, thresholds in `CYPHER.callouts`), and the stage
 shows them (`CALLOUTS` in `src/ui/narration.ts`). The enemy's bar is looked up from game content

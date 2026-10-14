@@ -215,9 +215,44 @@ describe('callouts', () => {
     })
     expect(calloutsFor(cuss)).toContain('explicit')
     expect(barScore(cuss, prompt)).toBeCloseTo(5 + CYPHER.profanityBonus)
-    for (const clean of ['Your class is a mess', 'shift your hello at the grass', 'Dickens']) {
-      expect(isProfane(clean), clean).toBe(false)
-    }
+    const cusses = [
+      'FUUUCK you',
+      'f*ck',
+      'f**k off',
+      'motherf*cker',
+      'bullsh*t',
+      'sh1t',
+      '$hit',
+      'a$$',
+      'kiss my a$$hole',
+      'b!tch',
+      'biiiitch',
+      'pu$$y',
+      'd!ck',
+      'c0ck',
+      'dammit',
+      'goddamn',
+      'what the hell',
+      'wtf bro',
+      'cabrón',
+      'pinche',
+      'Scheiße',
+      'kurwa',
+    ]
+    for (const cuss of cusses) expect(isProfane(cuss), cuss).toBe(true)
+    const clean = [
+      'Your class is a mess',
+      'shift your hello at the grass',
+      'Dickens',
+      'a cocktail with a peacock',
+      'scrap the title and the petition',
+      'swanky computation, teaching',
+      'I assess the Shiite shiitake',
+      'my wristwatch fell in saltwater',
+      'she pinched me',
+      'cumulative circumstance',
+    ]
+    for (const sentence of clean) expect(isProfane(sentence), sentence).toBe(false)
   })
 
   it('calls a bar with nothing in it dookie, even if the judge let it through', () => {

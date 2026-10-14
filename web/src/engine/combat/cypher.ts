@@ -52,10 +52,44 @@ export function startCypher(ctx: CombatContext): void {
 const clamp = (value: number, min: number, max: number) =>
   Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : min
 
+/** Look-alike characters players swap into swears, read back as letters. */
+const LEET: Record<string, string> = {
+  '@': 'a',
+  '4': 'a',
+  $: 's',
+  '5': 's',
+  '0': 'o',
+  '3': 'e',
+  '7': 't',
+}
+
+/**
+ * A swear as players type it: any letter stretched (fuuuck), and the letters between the first
+ * and the last masked with asterisks (f*ck, f**k, a**hole).
+ */
+function spelled(word: string): string {
+  if (word.length < 3) return [...word].map((c) => `${c}+`).join('')
+  const middle = [...word.slice(1, -1)].map((c) => `[${c}*]+`).join('')
+  return `${word[0]}+${middle}${word.at(-1)}+`
+}
+
+const SWEARS = [
+  ...PROFANITY.anywhere.map((word) => new RegExp(spelled(word))),
+  ...PROFANITY.whole.map((word) => new RegExp(`\\b${spelled(word)}\\b`)),
+]
+const CLEAN = new RegExp(`\\b(?:${PROFANITY.clean.join('|')})\\b`, 'g')
+
 /** Whether a bar cusses (swear words, not slurs), for the crowd's profanity bonus. */
 export function isProfane(text: string): boolean {
-  const lower = text.toLowerCase()
-  return PROFANITY.some((word) => word.test(lower))
+  const plain = text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/ß/g, 'ss')
+    .replace(/[@4$5037]/g, (c) => LEET[c] ?? c)
+    .replace(/(?<=[a-z])[!1|](?=[a-z*])/g, 'i')
+    .replace(CLEAN, ' ')
+  return SWEARS.some((swear) => swear.test(plain))
 }
 
 /**
