@@ -83,6 +83,12 @@ export const CYPHER = {
   halfBar: 0.5,
   /** Quality assumed when the judge couldn't answer, so a rhyme alone tops out at decent. */
   unjudgedQuality: 5,
+  /**
+   * The judge's breakdown flashed before the crowd reacts, read off its 0-10 marks: funny,
+   * clever and flow are called out at `hit`, flipping the opponent's words at `flipped`, and a
+   * bar neither funny nor clever below `noPunchline` gets called out for that. At most `max`.
+   */
+  callouts: { hit: 6, flipped: 8.75, noPunchline: 4, max: 4 },
 } as const
 
 /** What each tier does. A diss can't be dodged; hyped goes first so it boosts this hit's crit. */

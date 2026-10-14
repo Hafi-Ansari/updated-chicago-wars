@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { CYPHERS } from '../src/content/cyphers'
 import { CYPHER } from '../src/engine/balance'
 import { cleanBar, MAX_BAR_LINE_LENGTH } from '../src/engine/bars'
-import { barScore, canBattleRap, tierOf } from '../src/engine/combat/cypher'
+import { barScore, calloutsFor, canBattleRap, tierOf } from '../src/engine/combat/cypher'
 import { migrateSave } from '../src/engine/save'
 import { newGame, step } from '../src/engine/step'
 import type { BarResult, BattleState, GameEvent, GameState } from '../src/engine/types'
@@ -158,10 +158,99 @@ describe('a cypher', () => {
         bar: { kind: 'typed', text, quality: 6.4, rhyme: 1, rejected: false },
       }).events
     const half = (text: string) =>
-      spit(text).some((e) => e.type === 'narrate' && e.text.includes('Half a bar'))
+      spit(text).some((e) => e.type === 'callout' && e.callout === 'halfBar')
     expect(half("Bro don't trip I don't even drive")).toBe(true)
     expect(half("Bro don't trip I don't even drive\nI take the bus")).toBe(false)
     expect(spit('just one line')).toContainEqual({ type: 'cypher', tier: 'decent' })
+  })
+})
+
+describe('callouts', () => {
+  const bar = (over: Partial<Extract<BarResult, { kind: 'typed' }>> = {}): BarResult => ({
+    kind: 'typed',
+    text: 'line one\nline two',
+    quality: 7,
+    rhyme: 1,
+    rejected: false,
+    marks: { funny: 0, clever: 0, flow: 0, relevance: 0 },
+    ...over,
+  })
+  const marks = (funny: number, clever: number, flow: number, relevance: number) => ({
+    marks: { funny, clever, flow, relevance },
+  })
+
+  it('names the rhyme', () => {
+    const rhyme = (value: number) => calloutsFor(bar({ rhyme: value, ...marks(7, 0, 0, 0) }))[0]
+    expect(rhyme(1.2)).toBe('multiRhyme')
+    expect(rhyme(1)).toBe('perfectRhyme')
+    expect(rhyme(0.76)).toBe('slantRhyme')
+    expect(calloutsFor(bar({ rhyme: 0.3, ...marks(7, 0, 0, 0) }))).toEqual(['funny', 'noRhyme'])
+  })
+
+  it('calls out what landed, hits before misses', () => {
+    expect(calloutsFor(bar(marks(8, 3, 7, 9)))).toEqual([
+      'perfectRhyme',
+      'funny',
+      'flipped',
+      'flow',
+    ])
+    expect(calloutsFor(bar({ rhyme: 0, ...marks(2, 3, 7, 5) }))).toEqual([
+      'flow',
+      'noRhyme',
+      'noPunchline',
+    ])
+  })
+
+  it('shows at most four, dropping the last hits (flow first) so misses stay', () => {
+    expect(calloutsFor(bar(marks(10, 10, 10, 10)))).toEqual([
+      'perfectRhyme',
+      'funny',
+      'clever',
+      'flipped',
+    ])
+    expect(calloutsFor(bar({ text: 'one line', ...marks(10, 10, 10, 10) }))).toEqual([
+      'perfectRhyme',
+      'funny',
+      'clever',
+      'halfBar',
+    ])
+  })
+
+  it('gives a thrown-out bar only the reason', () => {
+    const out = (rejectedFor: 'gibberish' | 'injection' | null) =>
+      calloutsFor(bar({ rejected: true, rejectedFor, ...marks(10, 10, 10, 10) }))
+    expect(out('gibberish')).toEqual(['dookie'])
+    expect(out('injection')).toEqual(['forSale'])
+    expect(out(null)).toEqual(['dookie'])
+  })
+
+  it('without marks (judge unreachable) only the rhyme is called', () => {
+    expect(calloutsFor(bar({ marks: null }))).toEqual(['perfectRhyme'])
+    const older = {
+      kind: 'typed',
+      text: 'one line',
+      quality: 7,
+      rhyme: 1,
+      rejected: false,
+    } as const
+    expect(calloutsFor(older)).toEqual(['perfectRhyme', 'halfBar'])
+  })
+
+  it('picked answers, timeouts and empty bars get none', () => {
+    expect(calloutsFor({ kind: 'picked', answer: 0 })).toEqual([])
+    expect(calloutsFor({ kind: 'timeout' })).toEqual([])
+    expect(calloutsFor(bar({ text: '  ' }))).toEqual([])
+  })
+
+  it("flash between the hero's bar and the crowd's reaction", () => {
+    const started = step(fight(), { type: 'battleRap' }).state
+    const { events } = step(started, { type: 'spit', bar: bar(marks(8, 3, 7, 9)) })
+    const said = events.findIndex((e) => e.type === 'say' && e.side === 'hero')
+    const callouts = events.flatMap((e, i) => (e.type === 'callout' ? [i] : []))
+    const tier = events.findIndex((e) => e.type === 'cypher')
+    expect(callouts).toHaveLength(4)
+    expect(Math.min(...callouts)).toBe(said + 1)
+    expect(Math.max(...callouts)).toBe(tier - 1)
   })
 })
 

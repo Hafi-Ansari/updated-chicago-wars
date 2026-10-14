@@ -10,7 +10,7 @@ import type { CypherPrompt } from '../../content/types'
 import { CYPHER, CYPHER_EFFECTS } from '../balance'
 import { cleanBar, isHalfBar } from '../bars'
 import { fill } from '../text'
-import type { BarResult, BattleState, CypherState, CypherTier } from '../types'
+import type { BarResult, BattleState, Callout, CypherState, CypherTier } from '../types'
 import type { CombatContext } from './context'
 import { applyEffects } from './effects'
 import { hpRatio, isDown } from './stats'
@@ -83,6 +83,39 @@ export function tierOf(score: number): CypherTier {
   return 'flop'
 }
 
+/**
+ * The judge's breakdown of a typed bar: hits (the rhyme, then funny, clever, flipped, flow),
+ * then misses. Misses always show; over the cap, the last hits drop, flow first. A bar thrown
+ * out gets only the reason. Picked answers and timeouts aren't judged, so they get none.
+ */
+export function calloutsFor(bar: BarResult): Callout[] {
+  if (bar.kind !== 'typed') return []
+  const text = cleanBar(bar.text)
+  if (!text) return []
+  if (bar.rejected) return [bar.rejectedFor === 'injection' ? 'forSale' : 'dookie']
+
+  const { hit, flipped, noPunchline, max } = CYPHER.callouts
+  const hits: Callout[] = []
+  const misses: Callout[] = []
+  const rhyme = clamp(bar.rhyme, 0, 1.4)
+  if (rhyme > 1) hits.push('multiRhyme')
+  else if (rhyme >= 1) hits.push('perfectRhyme')
+  else if (rhyme >= 0.5) hits.push('slantRhyme')
+  else misses.push('noRhyme')
+
+  // No marks when the judge model didn't answer: only the rhyme is known.
+  const marks = bar.marks
+  if (marks) {
+    if (marks.funny >= hit) hits.push('funny')
+    if (marks.clever >= hit) hits.push('clever')
+    if (marks.relevance >= flipped) hits.push('flipped')
+    if (marks.flow >= hit) hits.push('flow')
+    if (Math.max(marks.funny, marks.clever) < noPunchline) misses.push('noPunchline')
+  }
+  if (isHalfBar(text)) misses.push('halfBar')
+  return [...hits.slice(0, Math.max(0, max - misses.length)), ...misses]
+}
+
 const CROWD: Record<CypherTier, string> = {
   flop: 'The crowd boos {hero} off the mic!',
   decent: 'The crowd nods along. Solid.',
@@ -90,23 +123,20 @@ const CROWD: Record<CypherTier, string> = {
   legendary: 'LEGENDARY! The whole block loses its mind!',
 }
 
-/** The hero's half of the cypher: say the bar, hear the crowd, land the tier's effects. */
+/** The hero's half of the cypher: say the bar, hear the judge and the crowd, land the effects. */
 export function spitBar(ctx: CombatContext, cypher: CypherState, bar: BarResult): CypherTier {
   const prompt = cypherPrompt(ctx.enemy.kind, cypher)
   const say = (text: string) =>
     ctx.emit({ type: 'say', speaker: ctx.hero.name, side: 'hero', text })
 
   const typed = bar.kind === 'typed' ? cleanBar(bar.text) : ''
-  if (typed) {
-    say(typed)
-    if (isHalfBar(typed)) {
-      ctx.emit({ type: 'narrate', text: `${ctx.hero.name} stops after one line. Half a bar!` })
-    }
-  } else if (bar.kind === 'picked' && prompt.answers[bar.answer]) {
+  if (typed) say(typed)
+  else if (bar.kind === 'picked' && prompt.answers[bar.answer]) {
     say(fill(prompt.answers[bar.answer]?.text ?? '', { enemy: ctx.enemy.name }))
   } else {
     ctx.emit({ type: 'narrate', text: `${ctx.hero.name} freezes up. Not a single word comes out.` })
   }
+  for (const callout of calloutsFor(bar)) ctx.emit({ type: 'callout', callout })
 
   const tier = tierOf(barScore(bar, prompt))
   ctx.emit({ type: 'cypher', tier })
