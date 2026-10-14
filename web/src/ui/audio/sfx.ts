@@ -26,6 +26,16 @@ export const sfx = {
     synth.tone({ freq: n('E5'), delay: 0.04, duration: 0.05, wave: 'pulse25', volume: 0.4 })
   }),
   deny: play(() => synth.tone({ freq: 140, duration: 0.12, wave: 'square', volume: 0.35 })),
+  /** A Battle Rap callout landing: a quick rising pair. */
+  hype: play(() => {
+    synth.tone({ freq: n('A5'), duration: 0.05, wave: 'pulse25', volume: 0.4 })
+    synth.tone({ freq: n('E6'), delay: 0.05, duration: 0.09, wave: 'pulse25', volume: 0.4 })
+  }),
+  /** That was straight dookie: a low, wet raspberry. */
+  dookie: play(() => {
+    synth.noise({ duration: 0.5, volume: 0.7, filter: 260, filterType: 'lowpass' })
+    synth.tone({ freq: 90, duration: 0.45, wave: 'square', volume: 0.22, slideTo: 55 })
+  }),
   advance: play(() => synth.tone({ freq: n('C6'), duration: 0.03, wave: 'pulse12', volume: 0.35 })),
 
   /** One typewriter character. */

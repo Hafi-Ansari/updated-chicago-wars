@@ -5,7 +5,33 @@
 
 import { MOVES } from '../content/moves'
 import { SKILLS } from '../content/skills'
-import { type GameEvent, type Side, STAT_LABELS, type StatusKind, type Tone } from '../engine'
+import {
+  type Callout,
+  type GameEvent,
+  type Side,
+  STAT_LABELS,
+  type StatusKind,
+  type Tone,
+} from '../engine'
+
+/**
+ * The judge's Battle Rap callouts, shouted on the stage between the hero's bar and the crowd's
+ * reaction. `hit` flashes gold, `miss` red, and `dookie` gets its own splat.
+ */
+export const CALLOUTS: Record<Callout, { text: string; kind: 'hit' | 'miss' | 'dookie' }> = {
+  perfectRhyme: { text: 'PERFECT RHYME!', kind: 'hit' },
+  slantRhyme: { text: 'SLANT RHYME!', kind: 'hit' },
+  multiRhyme: { text: 'MULTI-SYLLABLE!', kind: 'hit' },
+  funny: { text: 'FUNNY!', kind: 'hit' },
+  clever: { text: 'CLEVER!', kind: 'hit' },
+  flipped: { text: 'FLIPPED IT!', kind: 'hit' },
+  flow: { text: 'FLOWED WELL!', kind: 'hit' },
+  noRhyme: { text: "DIDN'T RHYME!", kind: 'miss' },
+  noPunchline: { text: "WHERE'S THE PUNCHLINE?", kind: 'miss' },
+  halfBar: { text: 'HALF A BAR!', kind: 'miss' },
+  forSale: { text: "THE JUDGES AIN'T FOR SALE!", kind: 'miss' },
+  dookie: { text: 'THAT WAS STRAIGHT DOOKIE!', kind: 'dookie' },
+}
 
 export interface Line {
   text: string
@@ -196,7 +222,7 @@ export function describe(event: GameEvent, names: Names): Line | null {
       // The engine narrates the crowd's reaction; this event drives the stage and sound.
       return null
     case 'callout':
-      // Flashed on the stage (CALLOUT_TEXT), not written in the text box.
+      // Flashed on the stage (CALLOUTS), not written in the text box.
       return null
     case 'locked':
       return {

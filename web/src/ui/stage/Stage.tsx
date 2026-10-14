@@ -9,6 +9,7 @@ import { ENEMIES } from '../../content/enemies'
 import { NPCS } from '../../content/npcs'
 import type { SpriteId } from '../../content/sprites'
 import type { GameState, Side } from '../../engine'
+import { CALLOUTS } from '../narration'
 import type { Display, PlayingEvent } from '../useGame'
 import { HpBox } from './HpBox'
 import Skyline from './Skyline'
@@ -77,6 +78,11 @@ function animationsFor(
       return { [e.target]: e.target === 'hero' ? 'anim-flee' : 'anim-flee-foe' }
     case 'locked':
       return { hero: 'anim-locked', enemy: 'anim-lunge' }
+    case 'callout': {
+      const { kind } = CALLOUTS[e.callout]
+      if (kind === 'hit') return { hero: 'anim-status anim-status--hyped' }
+      return kind === 'dookie' ? { shake: true } : {}
+    }
     case 'cypher':
       if (e.tier === 'flop') return { hero: 'anim-status anim-status--shook' }
       return { hero: 'anim-status anim-status--hyped', shake: e.tier === 'legendary' }
@@ -146,6 +152,7 @@ export function Stage({ state, current, display, foeHidden }: StageProps) {
   const foeGone = goneFoe === foeKey && anim.enemy === undefined
 
   const location = current?.event.type === 'location' ? current.event : null
+  const callout = current?.event.type === 'callout' ? CALLOUTS[current.event.callout] : null
   const battle = state.phase.kind === 'battle' ? state.phase.battle : null
   const { hero } = state
   const effectKey = current?.id ?? 'idle'
@@ -216,6 +223,12 @@ export function Stage({ state, current, display, foeHidden }: StageProps) {
             className={`float-num float-num--${float.target} ${float.variant}`}
           >
             {float.text}
+          </div>
+        )}
+
+        {callout && (
+          <div key={current?.id} className={`callout callout--${callout.kind}`} role="status">
+            {callout.text}
           </div>
         )}
 

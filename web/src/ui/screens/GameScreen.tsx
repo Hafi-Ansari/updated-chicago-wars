@@ -7,7 +7,7 @@ import { ActionPanel } from '../components/ActionPanel'
 import { SettingsMenu } from '../components/SettingsMenu'
 import { StatsCard } from '../components/StatsCard'
 import { TextBox } from '../components/TextBox'
-import { describe, type Line } from '../narration'
+import { CALLOUTS, describe, type Line } from '../narration'
 import { Stage } from '../stage/Stage'
 import type { Settings } from '../storage'
 import type { GameController } from '../useGame'
@@ -24,6 +24,12 @@ const VISUAL_EVENT_MS: Partial<Record<GameEvent['type'], number>> = {
   appear: 650,
   faint: 1100,
   fled: 700,
+}
+
+/** Battle Rap callouts stay up long enough to read: longer shouts hold longer. */
+function visualEventMs(event: GameEvent): number {
+  if (event.type === 'callout') return Math.max(700, 300 + 35 * CALLOUTS[event.callout].text.length)
+  return VISUAL_EVENT_MS[event.type] ?? 300
 }
 
 const HISTORY_LINES = 2
@@ -83,7 +89,7 @@ export function GameScreen({ controller, settings, onSettings }: GameScreenProps
   // Visual-only events (sprite slide-ins, faints) advance on their own.
   useEffect(() => {
     if (!current || line) return
-    const timer = setTimeout(advance, VISUAL_EVENT_MS[current.event.type] ?? 300)
+    const timer = setTimeout(advance, visualEventMs(current.event))
     return () => clearTimeout(timer)
   }, [current, line, advance])
 

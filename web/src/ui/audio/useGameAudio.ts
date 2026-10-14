@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { type GameEvent, type GameState, isGauntlet, type StatusKind } from '../../engine'
+import { CALLOUTS } from '../narration'
 import type { PlayingEvent } from '../useGame'
 import { music, type SongId } from './music'
 import { sfx } from './sfx'
@@ -53,6 +54,8 @@ function cueFor(event: GameEvent): (() => void) | null {
       return sfx.debuff
     case 'rapUnlocked':
       return sfx.learn
+    case 'callout':
+      return { hit: sfx.hype, miss: sfx.deny, dookie: sfx.dookie }[CALLOUTS[event.callout].kind]
     case 'cypher':
       return { flop: sfx.deny, decent: sfx.coin, fire: sfx.buff, legendary: sfx.levelUp }[
         event.tier
