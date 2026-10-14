@@ -188,17 +188,25 @@ describe('callouts', () => {
   })
 
   it('calls out what landed, hits before misses', () => {
-    expect(calloutsFor(bar(marks(8, 3, 7, 9)))).toEqual([
+    expect(calloutsFor(bar(marks(8, 3, 8, 9)))).toEqual([
       'perfectRhyme',
       'funny',
       'flipped',
       'flow',
     ])
-    expect(calloutsFor(bar({ rhyme: 0, ...marks(2, 3, 7, 5) }))).toEqual([
+    expect(calloutsFor(bar({ rhyme: 0, ...marks(2, 3, 8, 5) }))).toEqual([
       'flow',
       'noRhyme',
       'noPunchline',
     ])
+  })
+
+  it("doesn't call a plain direct answer a flip, or ordinary flow smooth", () => {
+    expect(calloutsFor(bar(marks(2, 3, 7, 10)))).toEqual(['perfectRhyme', 'noPunchline'])
+  })
+
+  it('calls a bar with nothing in it dookie, even if the judge let it through', () => {
+    expect(calloutsFor(bar(marks(0, 0.4, 1, 1)))).toEqual(['dookie'])
   })
 
   it('shows at most four, dropping the last hits (flow first) so misses stay', () => {
@@ -244,7 +252,7 @@ describe('callouts', () => {
 
   it("flash between the hero's bar and the crowd's reaction", () => {
     const started = step(fight(), { type: 'battleRap' }).state
-    const { events } = step(started, { type: 'spit', bar: bar(marks(8, 3, 7, 9)) })
+    const { events } = step(started, { type: 'spit', bar: bar(marks(8, 3, 8, 9)) })
     const said = events.findIndex((e) => e.type === 'say' && e.side === 'hero')
     const callouts = events.flatMap((e, i) => (e.type === 'callout' ? [i] : []))
     const tier = events.findIndex((e) => e.type === 'cypher')

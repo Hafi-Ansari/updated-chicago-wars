@@ -66,11 +66,13 @@ src/ui/        React: plays events back (typewriter, animations), dispatches act
   menu (once per fight; it stays unlocked after a heal). The enemy spits a bar and the hero has
   30 seconds to type a two-line comeback (or pick one of three, in Settings). The rap box frames
   the lines in battle rap's terms, the setup then the punchline, and Enter moves from one to the
-  other; one line counts as half a bar and scores half. The bar is scored into a tier (flop,
-  decent, fire, legendary) whose effects can't be dodged; a flop gets the hero booed (shook) and
-  the enemy still acts. Prompts and pick-mode answers are in `src/content/cyphers.ts`, scoring in
-  `src/engine/combat/cypher.ts`, tuning in `CYPHER` and `CYPHER_EFFECTS` (`balance.ts`). See
-  [Battle Rap judging](#battle-rap-judging).
+  other; one line counts as half a bar and scores half. Before the crowd reacts, the judges'
+  callouts flash on the stage one at a time, so players see why: PERFECT RHYME!, FUNNY!, CLEVER!,
+  FLIPPED IT!, or WHERE'S THE PUNCHLINE?, and THAT WAS STRAIGHT DOOKIE! for gibberish. The bar is
+  scored into a tier (flop, decent, fire, legendary) whose effects can't be dodged; a flop gets
+  the hero booed (shook) and the enemy still acts. Prompts and pick-mode answers are in
+  `src/content/cyphers.ts`, scoring in `src/engine/combat/cypher.ts`, tuning in `CYPHER` and
+  `CYPHER_EFFECTS` (`balance.ts`). See [Battle Rap judging](#battle-rap-judging).
 - **Vendors** (Plug, Gangsta, hot dog cart) aren't random encounters. They're recurring
   characters you can visit once per block from the explore menu. Walking only leads to fights
   and street events.
@@ -104,44 +106,56 @@ browser. Shared server code lives in `server/`.
    rhymes score higher; repeating the enemy's word doesn't count. Slang the dictionary doesn't
    know comes from `server/slang.ts`, then from spelling.
 2. **Everything else, by [Jev](https://docs.typesafe.ai)** (`server/jev.ts`): one request with
-   typed questions for wit, relevance, flow, rhymes-by-ear, injection and gibberish. Jev answers
-   with probabilities, not text. Failures get one quick retry (408, 429, 5xx, and 499, which Jev
-   returns now and then for a bar it judges fine a moment later). If Jev still fails (no key,
-   rate limit, timeout), the bar is scored on its rhyme with a neutral quality, which tops out at
-   decent.
+   typed questions for funny, clever, relevance, flow, rhymes-by-ear, injection and gibberish.
+   Jev answers with probabilities, not text. Funny is judged on the laugh, not the taste:
+   crude, juvenile and savage jokes count if they land. A bar's punch (the better of funny and
+   clever, a little more if it's both) is its quality; flow nudges it up to 1 either way, and
+   answering the opponent is a bonus of up to 1 on top, never a requirement (`JEV_QUALITY`).
+   Failures get one quick retry (408, 429, 5xx, and 499, which Jev returns now and then for a
+   bar it judges fine a moment later). If Jev still fails (no key, rate limit, timeout), the bar
+   is scored on its rhyme with a neutral quality, which tops out at decent.
 3. **Logging** (`server/barLog.ts`): every bar, its rhyme and Jev's answers go to Upstash Redis
    after the response is sent, keeping the latest 100,000. No IP addresses are stored.
 
 Jev only judges taste. The game's rules are enforced in code, where they can't be argued with:
 the rhyme check above, and the two-line rule (`isHalfBar` in `src/engine/bars.ts`, applied by
-`barScore` in the engine). The enemy's bar is looked up from game content on the server, never
-taken from the request. If the judge can't be reached, the game switches to pick mode, so the
-network never costs a turn.
+`barScore` in the engine). The endpoint also returns Jev's marks (funny, clever, flow and
+relevance, 0–10) and why a bar was thrown out; the engine turns them into the callouts
+(`calloutsFor` in `src/engine/combat/cypher.ts`, thresholds in `CYPHER.callouts`), and the stage
+shows them (`CALLOUTS` in `src/ui/narration.ts`). The enemy's bar is looked up from game content
+on the server, never taken from the request. If the judge can't be reached, the game switches to
+pick mode, so the network never costs a turn.
 
 **Local dev**: `npm run dev` serves `api/` too (a Vite plugin in `vite.config.ts`). Put
 `TYPESAFE_API_KEY=...` in `.env.local` (gitignored) to judge with Jev; without it bars are
 scored on rhyme alone. `npm test` never sees these keys: the plugin doesn't run under Vitest.
 
-**Evaluating the judge**: `eval/battle-bars.json` holds 40 labeled bars (great, mediocre,
-off-topic, gibberish, injection attempts). `npm run eval:judge` runs them through Jev three times,
-measures agreement with the labels, injection and gibberish handling, latency and cost, writes
-the summary and every verdict to `eval/results/<time>.json` (gitignored), and fails if Jev misses
-the bar to ship. Run it before changing the questions, levels, thresholds or quality weights.
-`npm run export:bars` pulls logged bars to label and add.
+**Evaluating the judge**: `eval/battle-bars.json` holds 55 labeled bars: great, mediocre, crude
+but funny, crude and flat, strong but off-topic, flat and off-topic, gibberish and injection
+attempts. `npm run eval:judge` runs them through Jev three times, measures agreement with the
+labels (overall and by category), the callouts each bar gets, injection and gibberish handling,
+latency and cost, writes the summary and every verdict to `eval/results/<time>.json`
+(gitignored), and fails if Jev misses the bar to ship. Run it before changing the questions,
+levels, thresholds, `JEV_QUALITY` or `CYPHER.callouts`. `npm run export:bars` pulls logged bars
+to label and add.
 
-The first runs (October 2026, `jev-1.13.0`) cleared the bar: 100% of verdicts within one tier of
-the label and 88% exact, every gibberish bar flopped, 22–23 of 24 injection attempts rejected and
-none above decent, p95 latency about 250 ms, about $0.04 per 1,000 battles. What's left to tune:
+The latest run (October 2026, `jev-1.13.0`, funny and clever questions): 100% of verdicts within
+one tier of the label and 96% exact. Every crude-but-funny bar went fire or legendary with
+FUNNY!, every strong off-topic bar went fire, every gibberish bar got DOOKIE, and all 24 injection
+attempts were rejected. p95 latency was about 200 ms, at about $0.04 per 1,000 battles. What's
+left to tune:
 
-- Jev is generous to flat but on-topic rhyming bars. Half the "mediocre" labels land in fire,
-  because relevance and flow come out high for any direct answer; wit is the score that tells
-  great from mediocre.
-- The reject thresholds (`JEV_THRESHOLDS`) have room. Honest bars scored at most 0.09 for
-  injection and 0.03 for gibberish, while the weakest true cases scored 0.45 and 0.31 (they still
-  flopped on quality). The labeled set has no slang-heavy honest bars, so lower them only once
-  logged bars show it's safe.
-- The balance sim's typed bars (`botBar` in `test/sim.ts`, quality ~ N(5.5, 2)) run lower than
-  real ones: the great and mediocre eval bars scored 5–9 on quality.
+- Mediocre bars in fire sit exactly at the 20% limit: two of them (`mediocre-04`, `-09`) score
+  6.1–6.3, and Jev rates them about as clever as the weakest great bar. Either those labels are
+  harsh or the fire line is.
+- Flat, off-topic bars now usually flop (punch is the score), where they used to land decent.
+- Jev's flow and relevance barely separate plain bars from great ones, so they're kept small in
+  the score, and FLIPPED IT! needs a punchline as well as relevance.
+- The reject thresholds (`JEV_THRESHOLDS`) are unchanged. The labeled set has no slang-heavy
+  honest bars, so lower them only once logged bars show it's safe; a bar with nothing in it
+  (funny, clever and flow all very low) is called DOOKIE anyway.
+- The balance sim's typed bars (`botBar` in `test/sim.ts`, quality ~ N(5.5, 2)) don't model the
+  new scoring, so recalibrate them from logged bars.
 
 **Setting it up on Vercel** (once):
 

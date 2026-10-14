@@ -33,12 +33,14 @@ export const JEV_RETRY = {
 }
 
 /**
- * How the answers become a 0-10 quality. A bar lands on its punch (the better of funny and
- * clever, a little more if it's both) and its flow. Answering the opponent is a bonus on top,
- * never a requirement: nothing for staying on the general topic or less, up to `relevanceBonus`
- * for flipping their own words.
+ * How the answers become a 0-10 quality. A bar's punch (the better of funny and clever, plus
+ * `both` of the other) is the score. Flow nudges it, up to `flow` x 5 either side of "okay".
+ * Answering the opponent is a bonus on top, never a requirement: nothing for the general topic
+ * or less, up to `relevanceBonus` for flipping their words. Fitted on eval/battle-bars.json:
+ * Jev rates nearly any smooth, on-topic bar high for flow and relevance, so those can't be
+ * what lifts a plain bar into fire.
  */
-export const JEV_QUALITY = { punch: 0.7, flow: 0.3, both: 0.25, relevanceBonus: 1.5 }
+export const JEV_QUALITY = { punch: 0.85, both: 0.25, flow: 0.2, relevanceBonus: 1 }
 
 export const JEV_QUESTIONS = {
   // Funny and clever are separate so a crude joke that kills can score as high as wordplay.
@@ -139,9 +141,12 @@ export function verdictFrom(answers: JevAnswers): Verdict {
   const answered = Math.min(1, Math.max(0, (marks.relevance - 5) / 5))
   const quality = Math.min(
     10,
-    JEV_QUALITY.punch * punch +
-      JEV_QUALITY.flow * marks.flow +
-      JEV_QUALITY.relevanceBonus * answered,
+    Math.max(
+      0,
+      JEV_QUALITY.punch * punch +
+        JEV_QUALITY.flow * (marks.flow - 5) +
+        JEV_QUALITY.relevanceBonus * answered,
+    ),
   )
   // Gibberish first: keyboard mashing often looks like an attempt to game the judge too.
   const rejectedFor: Rejection | null =

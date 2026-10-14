@@ -69,8 +69,10 @@ describe('Jev verdicts', () => {
     expect(top.quality).toBe(10)
     expect(top.marks).toEqual({ funny: 10, clever: 10, flow: 10, relevance: 10 })
     expect(quality({})).toBe(0)
-    // Punch 5 (funny), flow 5, on the general topic: 0.7 x 5 + 0.3 x 5.
-    expect(quality({ funny: 2, relevance: 2, flow: 2 })).toBeCloseTo(5)
+    // Punch 5 (funny), okay flow, on the general topic: just 0.85 x punch, to one decimal.
+    expect(quality({ funny: 2, relevance: 2, flow: 2 })).toBeCloseTo(4.3)
+    // Flow nudges either way, by up to 1.
+    expect(quality({ funny: 2, flow: 4 }) - quality({ funny: 2, flow: 0 })).toBeCloseTo(2)
   })
 
   it('a crude joke that kills scores like wordplay, and being both scores higher', () => {
@@ -85,10 +87,10 @@ describe('Jev verdicts', () => {
     const onTopicPlain = quality({ funny: 1, clever: 1, relevance: 4, flow: 3 })
     expect(offTopicGreat).toBeGreaterThan(onTopicPlain)
     expect(offTopicGreat).toBeGreaterThanOrEqual(8.5)
-    // Nothing for the general topic or less; up to 1.5 for flipping their words.
+    // Nothing for the general topic or less; up to 1 for flipping their words.
     const bar = { funny: 2, clever: 1, flow: 2 }
     expect(quality({ ...bar, relevance: 2 })).toBe(quality({ ...bar, relevance: 0 }))
-    expect(quality({ ...bar, relevance: 4 }) - quality({ ...bar, relevance: 2 })).toBeCloseTo(1.5)
+    expect(quality({ ...bar, relevance: 4 }) - quality({ ...bar, relevance: 2 })).toBeCloseTo(1)
   })
 
   it('rejects injection attempts and gibberish, and says which', () => {
@@ -139,7 +141,7 @@ describe('judgeWithJev', () => {
       inputTokens: 812,
       rejected: false,
     })
-    expect(result.quality).toBeCloseTo(5)
+    expect(result.quality).toBeCloseTo(4.3)
     expect(result.marks).toEqual({ funny: 5, clever: 0, flow: 5, relevance: 5 })
     expect(seen[0]).toMatchObject({
       state: { enemy_bar: thugBar, player_bar: 'bmy bar/b', rhyme_check: 'perfect rhyme' },
@@ -416,16 +418,19 @@ describe('the judge evaluation set (eval/battle-bars.json)', () => {
     }
   ).items
 
-  it('has 40 bars in the planned mix, all valid requests', () => {
+  it('has 55 bars in the planned mix, all valid requests', () => {
     const count = (c: string) => items.filter((i) => i.category === c).length
-    expect(items).toHaveLength(40)
+    expect(items).toHaveLength(55)
     expect([
       count('great'),
       count('mediocre'),
-      count('off-topic'),
+      count('off-topic-flat'),
+      count('off-topic-great'),
+      count('crude-funny'),
+      count('crude-flat'),
       count('gibberish'),
       count('injection'),
-    ]).toEqual([10, 10, 6, 6, 8])
+    ]).toEqual([10, 10, 6, 5, 6, 4, 6, 8])
     for (const item of items) expect(parseJudgeRequest(item), item.id).toBeTypeOf('object')
   })
 
@@ -436,7 +441,7 @@ describe('the judge evaluation set (eval/battle-bars.json)', () => {
         item.playerBar,
       ).score
     for (const item of items) {
-      if (item.category === 'great' || item.category === 'off-topic') {
+      if (/^(great|off-topic|crude-funny)/.test(item.category)) {
         expect(rhymesWith(item), item.id).toBeGreaterThanOrEqual(0.6)
       }
     }

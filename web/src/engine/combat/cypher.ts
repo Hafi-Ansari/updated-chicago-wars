@@ -86,7 +86,8 @@ export function tierOf(score: number): CypherTier {
 /**
  * The judge's breakdown of a typed bar: hits (the rhyme, then funny, clever, flipped, flow),
  * then misses. Misses always show; over the cap, the last hits drop, flow first. A bar thrown
- * out gets only the reason. Picked answers and timeouts aren't judged, so they get none.
+ * out, or with nothing in it at all, gets only the verdict. Picked answers and timeouts aren't
+ * judged, so they get none.
  */
 export function calloutsFor(bar: BarResult): Callout[] {
   if (bar.kind !== 'typed') return []
@@ -94,7 +95,10 @@ export function calloutsFor(bar: BarResult): Callout[] {
   if (!text) return []
   if (bar.rejected) return [bar.rejectedFor === 'injection' ? 'forSale' : 'dookie']
 
-  const { hit, flipped, noPunchline, max } = CYPHER.callouts
+  const { hit, flow, flipped, noPunchline, dookie, max } = CYPHER.callouts
+  const marks = bar.marks
+  if (marks && Math.max(marks.funny, marks.clever, marks.flow) < dookie) return ['dookie']
+
   const hits: Callout[] = []
   const misses: Callout[] = []
   const rhyme = clamp(bar.rhyme, 0, 1.4)
@@ -104,13 +108,13 @@ export function calloutsFor(bar: BarResult): Callout[] {
   else misses.push('noRhyme')
 
   // No marks when the judge model didn't answer: only the rhyme is known.
-  const marks = bar.marks
   if (marks) {
+    const punch = Math.max(marks.funny, marks.clever)
     if (marks.funny >= hit) hits.push('funny')
     if (marks.clever >= hit) hits.push('clever')
-    if (marks.relevance >= flipped) hits.push('flipped')
-    if (marks.flow >= hit) hits.push('flow')
-    if (Math.max(marks.funny, marks.clever) < noPunchline) misses.push('noPunchline')
+    if (marks.relevance >= flipped && punch >= hit) hits.push('flipped')
+    if (marks.flow >= flow) hits.push('flow')
+    if (punch < noPunchline) misses.push('noPunchline')
   }
   if (isHalfBar(text)) misses.push('halfBar')
   return [...hits.slice(0, Math.max(0, max - misses.length)), ...misses]

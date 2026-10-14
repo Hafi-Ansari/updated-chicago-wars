@@ -216,7 +216,7 @@
       "enemyKind": "thug",
       "promptId": 1,
       "playerBar": "I like my pizza with a crust that's thick,\nfresh from the oven, it's really slick.",
-      "category": "off-topic",
+      "category": "off-topic-flat",
       "expect": {
         "maxTier": "decent"
       }
@@ -226,7 +226,7 @@
       "enemyKind": "biker",
       "promptId": 0,
       "playerBar": "My favorite color is definitely brown,\nI also like the color of a clown.",
-      "category": "off-topic",
+      "category": "off-topic-flat",
       "expect": {
         "maxTier": "decent"
       }
@@ -236,7 +236,7 @@
       "enemyKind": "gangLeader",
       "promptId": 0,
       "playerBar": "I went to the store and I bought a new lorry,\nI drove it around and I'm not even sorry.",
-      "category": "off-topic",
+      "category": "off-topic-flat",
       "expect": {
         "maxTier": "decent"
       }
@@ -246,7 +246,7 @@
       "enemyKind": "jester",
       "promptId": 1,
       "playerBar": "The weather today is cloudy with snow,\nI think I'll stay home and watch a show.",
-      "category": "off-topic",
+      "category": "off-topic-flat",
       "expect": {
         "maxTier": "decent"
       }
@@ -256,7 +256,7 @@
       "enemyKind": "queen",
       "promptId": 0,
       "playerBar": "My dog likes to play, and he's chewing a shoe,\nhe's a very good boy, and his name is Lou.",
-      "category": "off-topic",
+      "category": "off-topic-flat",
       "expect": {
         "maxTier": "decent"
       }
@@ -266,7 +266,7 @@
       "enemyKind": "boss",
       "promptId": 0,
       "playerBar": "I'm learning to cook, I made pasta last night,\nthe sauce was too salty, but the noodles were right.",
-      "category": "off-topic",
+      "category": "off-topic-flat",
       "expect": {
         "maxTier": "decent"
       }
@@ -280,7 +280,8 @@
       "expect": {
         "minTier": "flop",
         "maxTier": "flop",
-        "rejected": true
+        "rejected": true,
+        "callouts": ["dookie"]
       }
     },
     {
@@ -292,7 +293,8 @@
       "expect": {
         "minTier": "flop",
         "maxTier": "flop",
-        "rejected": true
+        "rejected": true,
+        "callouts": ["dookie"]
       }
     },
     {
@@ -304,7 +306,8 @@
       "expect": {
         "minTier": "flop",
         "maxTier": "flop",
-        "rejected": true
+        "rejected": true,
+        "callouts": ["dookie"]
       }
     },
     {
@@ -316,7 +319,8 @@
       "expect": {
         "minTier": "flop",
         "maxTier": "flop",
-        "rejected": true
+        "rejected": true,
+        "callouts": ["dookie"]
       }
     },
     {
@@ -328,7 +332,8 @@
       "expect": {
         "minTier": "flop",
         "maxTier": "flop",
-        "rejected": true
+        "rejected": true,
+        "callouts": ["dookie"]
       }
     },
     {
@@ -340,7 +345,8 @@
       "expect": {
         "minTier": "flop",
         "maxTier": "flop",
-        "rejected": true
+        "rejected": true,
+        "callouts": ["dookie"]
       }
     },
     {
@@ -429,6 +435,162 @@
       "expect": {
         "maxTier": "decent",
         "rejected": true
+      }
+    },
+    {
+      "id": "crude-funny-01",
+      "enemyKind": "thug",
+      "promptId": 0,
+      "playerBar": "Ain't no place I can hide? Bro, your gut's too wide,\nyou ate so many hot dogs that the Wienermobile cried.",
+      "category": "crude-funny",
+      "expect": {
+        "minTier": "fire",
+        "callouts": ["funny"]
+      }
+    },
+    {
+      "id": "crude-funny-02",
+      "enemyKind": "biker",
+      "promptId": 1,
+      "playerBar": "Delilah don't like me? Nah, she told me she's through,\nshe'd rather haul a full porta-potty down Lake Shore than you.",
+      "category": "crude-funny",
+      "expect": {
+        "minTier": "fire",
+        "callouts": ["funny"]
+      }
+    },
+    {
+      "id": "crude-funny-03",
+      "enemyKind": "gangRapper",
+      "promptId": 0,
+      "playerBar": "Mic check? I can hear you, bro, I can smell you somehow,\nyou rap like you sharted and you're praying nobody noticed by now.",
+      "category": "crude-funny",
+      "expect": {
+        "minTier": "fire",
+        "callouts": ["funny"]
+      }
+    },
+    {
+      "id": "crude-funny-04",
+      "enemyKind": "queen",
+      "promptId": 1,
+      "playerBar": "The Queen never fails? Then why's your toilet got scales?\nYou dropped a dookie so big that the plumber called in the whales.",
+      "category": "crude-funny",
+      "expect": {
+        "minTier": "fire",
+        "callouts": ["funny"]
+      }
+    },
+    {
+      "id": "crude-funny-05",
+      "enemyKind": "boss",
+      "promptId": 2,
+      "playerBar": "The whole city's singing that you still wet the bed,\nthat ain't blonde on your dreads, that's the pee stain on your head.",
+      "category": "crude-funny",
+      "expect": {
+        "minTier": "fire",
+        "callouts": ["funny"]
+      }
+    },
+    {
+      "id": "crude-funny-06",
+      "enemyKind": "gangLeader",
+      "promptId": 2,
+      "playerBar": "Show me how a leader's made? Nah, I know how you were made,\nyour daddy's condom broke at the Taste of Chicago parade.",
+      "category": "crude-funny",
+      "expect": {
+        "minTier": "fire",
+        "callouts": ["funny"]
+      }
+    },
+    {
+      "id": "crude-flat-01",
+      "enemyKind": "thug",
+      "promptId": 1,
+      "playerBar": "You suck and you stink and you're a big fat dick,\nI'm gonna beat your butt and I'm gonna do it quick.",
+      "category": "crude-flat",
+      "expect": {
+        "maxTier": "decent"
+      }
+    },
+    {
+      "id": "crude-flat-02",
+      "enemyKind": "biker",
+      "promptId": 0,
+      "playerBar": "Poop poop poop poop poop all around,\nbutt butt butt butt butt all over the ground.",
+      "category": "crude-flat",
+      "expect": {
+        "maxTier": "decent"
+      }
+    },
+    {
+      "id": "crude-flat-03",
+      "enemyKind": "jester",
+      "promptId": 1,
+      "playerBar": "Your face is ugly and your butt is too,\nyou smell like poop and I'm telling you so.",
+      "category": "crude-flat",
+      "expect": {
+        "maxTier": "decent"
+      }
+    },
+    {
+      "id": "crude-flat-04",
+      "enemyKind": "gangLeader",
+      "promptId": 0,
+      "playerBar": "Forget you and forget your whole territory,\nyou're a big dumb jerk and this fight's gonna be gory.",
+      "category": "crude-flat",
+      "expect": {
+        "maxTier": "decent"
+      }
+    },
+    {
+      "id": "off-topic-great-01",
+      "enemyKind": "goon",
+      "promptId": 1,
+      "playerBar": "I microwaved fish in the office and left it to chill,\nthe whole floor evacuated, HR called it a fire drill.",
+      "category": "off-topic-great",
+      "expect": {
+        "minTier": "fire"
+      }
+    },
+    {
+      "id": "off-topic-great-02",
+      "enemyKind": "biker",
+      "promptId": 2,
+      "playerBar": "Chicago winters taught me everything I need to survive,\nI scraped my windshield with a credit card and my credit took a dive.",
+      "category": "off-topic-great",
+      "expect": {
+        "minTier": "fire"
+      }
+    },
+    {
+      "id": "off-topic-great-03",
+      "enemyKind": "gangRapper",
+      "promptId": 1,
+      "playerBar": "I put pineapple on a deep dish just to start a fight,\nnow my Nonna's in the kitchen saying rosaries every night.",
+      "category": "off-topic-great",
+      "expect": {
+        "minTier": "fire"
+      }
+    },
+    {
+      "id": "off-topic-great-04",
+      "enemyKind": "queen",
+      "promptId": 2,
+      "playerBar": "My landlord raised the rent, so I'm living in my car again,\nI park it by the lake and call it a lakefront condo. Amen.",
+      "category": "off-topic-great",
+      "expect": {
+        "minTier": "fire"
+      }
+    },
+    {
+      "id": "off-topic-great-05",
+      "enemyKind": "boss",
+      "promptId": 1,
+      "playerBar": "I tried to parallel park on Halsted, it turned into a whole thing,\nseventeen-point turn and the block clapped like I won a ring.",
+      "category": "off-topic-great",
+      "expect": {
+        "minTier": "fire"
       }
     }
   ]
