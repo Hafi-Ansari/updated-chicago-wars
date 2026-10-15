@@ -38,7 +38,8 @@ export function cypherPrompt(kind: keyof typeof CYPHERS, cypher: CypherState): C
 export function startCypher(ctx: CombatContext): void {
   const prompts = CYPHERS[ctx.enemy.kind]
   const prompt = ctx.pick(`cypher.${ctx.enemy.kind}`, prompts)
-  ctx.battle.rapUsed = true
+  // TEMP(preview): unlimited Battle Rap. Revert before merging to main (was `= true`).
+  ctx.battle.rapUsed = false
   ctx.battle.cypher = { prompt: prompts.indexOf(prompt), answers: ctx.rng.sample([0, 1, 2], 3) }
   ctx.emit({ type: 'narrate', text: "The crowd circles up. It's a cypher!", tone: 'info' })
   ctx.emit({

@@ -384,7 +384,8 @@ function startBattle(state: GameState, enemy: Enemy, canFlee: boolean, ctx: Step
       enemyLastMove: null,
       enemyFled: false,
       enemyRally: state.block >= RALLY.fromBlock,
-      rapUnlocked: false,
+      // TEMP(preview): Battle Rap from the first turn. Revert before merging to main (was `false`).
+      rapUnlocked: true,
       rapUsed: false,
       cypher: null,
     },
