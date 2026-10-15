@@ -73,10 +73,12 @@ src/ui/        React: plays events back (typewriter, animations), dispatches act
   legendary) whose effects can't be dodged; a flop gets the hero booed (shook) and the enemy
   still acts. Better bars hit harder (a typed bar's score sets the hit's power, up to 2.2×), and
   the crowd tips fire and legendary bars a share of the enemy's clout. The hero's statuses sit
-  the rap out: no stun, daze or bleed on that turn, and nothing counts down. Every enemy type has 10 bars to spit (crude, clever and in character), each with
-  three pick-mode answers, in `src/content/cyphers.ts`; scoring is in
-  `src/engine/combat/cypher.ts`, tuning in `CYPHER` and `CYPHER_EFFECTS` (`balance.ts`). See
-  [Battle Rap judging](#battle-rap-judging).
+  the rap out: no stun, daze or bleed on that turn, and nothing counts down. Every enemy type
+  has 50 bars to spit (crude, clever and in character, most of them riffing on famous rap beefs
+  and diss tracks: Kendrick vs. Drake, Jay-Z vs. Nas, Em vs. MGK, 50 vs. Ja, Cardi vs. Nicki and
+  more), each with three pick-mode answers, in `src/content/cyphers.ts`. The enemy picks one at
+  random, skipping the ones it spat recently. Scoring is in `src/engine/combat/cypher.ts`, tuning
+  in `CYPHER` and `CYPHER_EFFECTS` (`balance.ts`). See [Battle Rap judging](#battle-rap-judging).
 - **Vendors** (Plug, Gangsta, hot dog cart) aren't random encounters. They're recurring
   characters you can visit once per block from the explore menu. Walking only leads to fights
   and street events.
